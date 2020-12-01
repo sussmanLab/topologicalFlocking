@@ -6,6 +6,7 @@
 #include "Simulation.h"
 #include "voronoiModelBase.h"
 #include "scalarVicsekModel.h"
+#include "DatabaseNetCDFSPV.h"
 
 /*!
 This file compiles to produce an executable that can be used to reproduce the timing information
@@ -57,6 +58,10 @@ int main(int argc, char*argv[])
                        abort();
         };
 
+    char dataname[256];
+    sprintf(dataname,"../data/test.nc");
+    SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace,false);
+
     clock_t t1,t2; //clocks for timing information
     bool reproducible = true; // if you want random numbers with a more random seed each run, set this to false
     //check to see if we should run on a GPU
@@ -99,7 +104,9 @@ int main(int argc, char*argv[])
     for(int ii = 0; ii < tSteps; ++ii)
         {
 
-        //if(ii%100 ==0)
+        if(ii%10 ==0)
+            ncdat.WriteState(model);
+
         sim->performTimestep();
         };
     cudaProfilerStop();

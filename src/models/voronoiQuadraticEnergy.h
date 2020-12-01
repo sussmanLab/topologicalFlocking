@@ -67,8 +67,6 @@ class VoronoiQuadraticEnergy : public voronoiModelBase
         //! Second derivative of the energy w/r/t cell positions...for getting dynMat info
         Matrix2x2 d2Edridrj(int i, int j, neighborType neighbor,double unstress = 1.0, double stress = 1.0);
 
-    //be friends with the associated Database class so it can access data to store or read
-    friend class SPVDatabaseNetCDF;
     };
 
 #endif

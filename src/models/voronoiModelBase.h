@@ -185,6 +185,8 @@ class voronoiModelBase : public Simple2DActiveCell
 
         //!In GPU mode, interactions are computed "per voronoi vertex"...forceSets are summed up to get total force on a particle
         GPUArray<double2> forceSets;
+    //be friends with the associated Database class so it can access data to store or read
+    friend class SPVDatabaseNetCDF;
     };
 
 #endif

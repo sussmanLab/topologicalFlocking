@@ -84,7 +84,7 @@ void SPVDatabaseNetCDF::WriteState(STATE s, double time, int rec)
     double means0=0.0;
 
     ArrayHandle<double2> h_p(s->cellPositions,access_location::host,access_mode::read);
-    ArrayHandle<double> h_cd(s->cellDirectors,access_location::host,access_mode::read);
+    ArrayHandle<double2> h_v(s->cellVelocities,access_location::host,access_mode::read);
     ArrayHandle<int> h_ct(s->cellType,access_location::host,access_mode::read);
     ArrayHandle<int> h_ex(s->exclusions,access_location::host,access_mode::read);
 
@@ -95,7 +95,7 @@ void SPVDatabaseNetCDF::WriteState(STATE s, double time, int rec)
         double py = h_p.data[pidx].y;
         posdat[(2*idx)] = px;
         posdat[(2*idx)+1] = py;
-        directordat[ii] = h_cd.data[pidx];
+        directordat[ii] = atan2(h_v.data[pidx].y,h_v.data[pidx].x);
         if(h_ex.data[ii] == 0)
             typedat[ii] = h_ct.data[pidx];
         else
