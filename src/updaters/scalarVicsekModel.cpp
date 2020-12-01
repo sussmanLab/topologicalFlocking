@@ -1,5 +1,5 @@
 #include "scalarVicsekModel.h"
-//#include "scalarVicsekModel.cuh"
+#include "scalarVicsekModel.cuh"
 #include "functions.h"
 
 /*! \file scalarVicsekModel.cpp */
@@ -78,7 +78,6 @@ void scalarVicsekModel::integrateEquationsOfMotionCPU()
     for(int ii = 0; ii<Ndof; ++ii)
         {
         double v0i = h_motility.data[ii].x;
-        double Dri = h_motility.data[ii].y;
         h_disp.data[ii] = deltaT*(v0i*h_v.data[ii] + mu*h_f.data[ii]);
         }
     }
@@ -102,15 +101,16 @@ void scalarVicsekModel::integrateEquationsOfMotionCPU()
             }
         m +=1; //account for self-alignment
         
-        //rotate new director
+        //normalize and rotate new director
         double u = noise.getRealUniform(-.5,.5);
         double theta = 2.0*PI*u*eta;
+        newVel.data[ii] = (1./norm(newVel.data[ii])) * newVel.data[ii];
         rotate2D(newVel.data[ii],theta);
         }
     //update and normalize
     for (int ii = 0; ii < Ndof; ++ii)
         {
-        vel.data[ii] = (1./norm(newVel.data[ii])) * newVel.data[ii];
+        vel.data[ii] = newVel.data[ii];
         }
     }//ArrayHandle scope
     };
@@ -120,30 +120,41 @@ The straightforward GPU implementation
 */
 void scalarVicsekModel::integrateEquationsOfMotionGPU()
     {
-    /*
+    //first stage: update positions
     activeModel->computeForces();
-    {//scope for array Handles
+    {//scope for array handles
     ArrayHandle<double2> d_f(activeModel->returnForces(),access_location::device,access_mode::read);
-    ArrayHandle<double> d_cd(activeModel->cellDirectors,access_location::device,access_mode::readwrite);
-    ArrayHandle<double2> d_v(activeModel->cellVelocities,access_location::device,access_mode::readwrite);
+    ArrayHandle<double2> d_v(activeModel->cellVelocities,access_location::device,access_mode::read);
     ArrayHandle<double2> d_disp(displacements,access_location::device,access_mode::overwrite);
     ArrayHandle<double2> d_motility(activeModel->Motility,access_location::device,access_mode::read);
-    ArrayHandle<curandState> d_RNG(noise.RNGs,access_location::device,access_mode::readwrite);
-
-    gpu_spp_aligning_eom_integration(d_f.data,
-                 d_v.data,
-                 d_disp.data,
-                 d_motility.data,
-                 d_cd.data,
-                 d_RNG.data,
-                 Ndof,
-                 deltaT,
-                 Timestep,
-                 mu,
-                 J);
-    };//end array handle scope
+    gpu_scalar_vicsek_update(d_f.data,
+                             d_v.data,
+                             d_disp.data,
+                             d_motility.data,
+                             Ndof,
+                             deltaT,
+                             mu);
+    }
     activeModel->moveDegreesOfFreedom(displacements);
     activeModel->enforceTopology();
-    */
-    };
 
+    //second stage: update directors
+    {//scope for array handles
+    ArrayHandle<double2> d_v(activeModel->cellVelocities,access_location::device,access_mode::readwrite);
+    ArrayHandle<double2> d_newV(newVelocityDirector,access_location::device,access_mode::overwrite);
+    ArrayHandle<int> neighs(activeModel->neighbors,access_location::device,access_mode::read);
+    ArrayHandle<int> nNeighs(activeModel->neighborNum,access_location::device,access_mode::read);
+    ArrayHandle<curandState> d_RNG(noise.RNGs,access_location::device,access_mode::readwrite);
+
+    gpu_scalar_vicsek_directors(d_v.data,
+                                d_newV.data,
+                                nNeighs.data,
+                                neighs.data,
+                                activeModel->n_idx,
+                                d_RNG.data,
+                                Ndof,
+                                eta);
+    }
+    //swap velocity and newVelocity data
+    activeModel->cellVelocities.swap(newVelocityDirector);
+    };

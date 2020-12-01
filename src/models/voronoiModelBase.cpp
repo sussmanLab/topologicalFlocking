@@ -26,7 +26,7 @@ void voronoiModelBase::reinitialize(int neighborGuess)
  * a function that takes care of the initialization of the class.
  * \param n the number of cells to initialize
  */
-void voronoiModelBase::initializeVoronoiModelBase(int n)
+void voronoiModelBase::initializeVoronoiModelBase(int n, int maxNeighGuess)
     {
     //set particle number and call initializers
     Ncells = n;
@@ -46,7 +46,6 @@ void voronoiModelBase::initializeVoronoiModelBase(int n)
     initializeCellSorting();
 
     //DelaunayGPU initialization
-    int maxNeighGuess = 12;
     delGPU.initialize(Ncells,maxNeighGuess,1.0,Box);
     delGPU.setSafetyMode(true);
     delGPU.setGPUcompute(GPUcompute);

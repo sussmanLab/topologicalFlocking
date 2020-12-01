@@ -24,20 +24,23 @@ int main(int argc, char*argv[])
     int USE_GPU = 0; //0 or greater uses a gpu, any negative number runs on the cpu
     int tSteps = 5; //number of time steps to run after initialization
     int initSteps = 1; //number of initialization steps
+    int oneRingSize = 24;//estimate of max number of voro neighbors
 
     double dt = 1.0; //the time step size
     double v0 = 0.1;  // the self-propulsion
     double eta = 0.2; //the scalar vicsek noise
     double mu = 1.0; //the friction...not relevant at the moment
 
+
     //The defaults can be overridden from the command line
-    while((c=getopt(argc,argv,"n:g:m:s:r:a:i:v:b:x:y:z:p:t:e:")) != -1)
+    while((c=getopt(argc,argv,"n:g:m:i:v:t:e:o:")) != -1)
         switch(c)
         {
             case 'n': numpts = atoi(optarg); break;
             case 'g': USE_GPU = atoi(optarg); break;
             case 't': tSteps = atoi(optarg); break;
             case 'i': initSteps = atoi(optarg); break;
+            case 'o': oneRingSize = atoi(optarg); break;
             case 'd': dt = atof(optarg); break;
             case 'e': eta = atof(optarg); break;
             case 'm': mu = atof(optarg); break;
@@ -62,10 +65,9 @@ int main(int argc, char*argv[])
     if (!gpu) 
         initializeGPU = false;
 
-    cout << "initializing a system of " << numpts << " cells at temperature " << v0 << endl;
     shared_ptr<scalarVicsekModel> vicsek = make_shared<scalarVicsekModel>(numpts,eta,mu,dt);
     shared_ptr<voronoiModelBase> model = make_shared<voronoiModelBase>();
-    model->initializeVoronoiModelBase(numpts);
+    model->initializeVoronoiModelBase(numpts,oneRingSize);
 
     //set the cell activity to have D_r = 1. and a given v_0
     //eventually use Dr rather than eta, to allow heterogeneous noise?
