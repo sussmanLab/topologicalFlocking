@@ -33,6 +33,7 @@ void Simple2DCell::initializeSimple2DCell(int n)
     fillGPUArrayWithVector(masses,cellMasses);
     vector<double2> velocities(Ncells,make_double2(0.0,0.0));
     fillGPUArrayWithVector(velocities,cellVelocities);
+    fillGPUArrayWithVector(velocities,cellForces);
 
     vertexForces.resize(Nvertices);
     };

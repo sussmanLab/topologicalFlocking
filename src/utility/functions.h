@@ -24,6 +24,14 @@ __host__ __device__ inline
  \brief Utility functions that can be called from host or device
  */
 
+//!Rotate a vector about the z-axis by theta
+HOSTDEVICE void rotate2D(double2 &vec, double theta)
+    {
+    double vx = vec.x;
+    double vy = vec.y;
+    vec.x = vx*cos(theta) - vy*sin(theta);
+    vec.y = vx*sin(theta) + vy*cos(theta);
+    };
 
 //!Calculate the determinant of a 2x2 matrix
 HOSTDEVICE double Det2x2(const double &x11,const double &x12, const double &x21, const double &x22)

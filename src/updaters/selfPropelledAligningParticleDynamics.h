@@ -20,7 +20,7 @@ class selfPropelledAligningParticleDynamics : public simpleEquationOfMotion
         //!base constructor sets the default time step size
         selfPropelledAligningParticleDynamics(){deltaT = 0.01; GPUcompute =true;Timestep = 0;};
 
-        //!additionally set the number of particles andinitialize things
+        //!additionally set the number of particles and initialize things
         selfPropelledAligningParticleDynamics(int N);
 
         //!the fundamental function that models will call, using vectors of different data structures
