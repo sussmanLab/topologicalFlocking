@@ -6,6 +6,7 @@
 #include "Simulation.h"
 #include "voronoiModelBase.h"
 #include "scalarVicsekModel.h"
+#include "vectorVicsekModel.h"
 #include "DatabaseNetCDFSPV.h"
 
 /*!
@@ -25,11 +26,11 @@ int main(int argc, char*argv[])
     int USE_GPU = 0; //0 or greater uses a gpu, any negative number runs on the cpu
     int tSteps = 5; //number of time steps to run after initialization
     int initSteps = 1; //number of initialization steps
-    int oneRingSize = 24;//estimate of max number of voro neighbors
+    int oneRingSize = 32;//estimate of max number of voro neighbors...for now, best to set this deliberately high
 
     double dt = 1.0; //the time step size
     double v0 = 0.1;  // the self-propulsion
-    double eta = 0.2; //the scalar vicsek noise
+    double eta = 0.2; //the scalar- or vector- vicsek noise
     double mu = 1.0; //the friction...not relevant at the moment
 
 
@@ -70,7 +71,8 @@ int main(int argc, char*argv[])
     if (!gpu) 
         initializeGPU = false;
 
-    shared_ptr<scalarVicsekModel> vicsek = make_shared<scalarVicsekModel>(numpts,eta,mu,dt);
+    shared_ptr<scalarVicsekModel> vicsek = make_shared<scalarVicsekModel>(numpts,eta,mu,dt);//just switch which line is commented out to use scalar or vector viscek model...
+    //shared_ptr<vectorVicsekModel> vicsek = make_shared<vectorVicsekModel>(numpts,eta,mu,dt);
     shared_ptr<voronoiModelBase> model = make_shared<voronoiModelBase>();
     model->initializeVoronoiModelBase(numpts,oneRingSize);
 
