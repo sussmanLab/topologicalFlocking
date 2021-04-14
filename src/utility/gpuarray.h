@@ -1,6 +1,8 @@
 #ifndef GPUARRAY_H
 #define GPUARRAY_H
 
+#include "globalCudaDisable.h"
+
 /*
 This file is based on part of the HOOMD-blue project, released under the BSD 3-Clause License:
 
@@ -299,11 +301,8 @@ template<class T> void GPUArray<T>::allocate()
         throw std::runtime_error("Error allocating GPUArray.");
         }
 
-#ifdef ENABLE_CUDA
-//    if(RegisterArray)
-//        cudaHostRegister(h_data,Num_elements*sizeof(T),cudaHostRegisterDefault);
-    cudaMalloc(&d_data, Num_elements*sizeof(T));
-#endif
+    if(!globalCudaDisable)
+        cudaMalloc(&d_data, Num_elements*sizeof(T));
     }
 
 template<class T> void GPUArray<T>::deallocate()
@@ -312,11 +311,8 @@ template<class T> void GPUArray<T>::deallocate()
     if (Num_elements == 0)
         return;
     // free memory
-#ifdef ENABLE_CUDA
-    cudaFree(d_data);
-//    if(RegisterArray)
-//        cudaHostUnregister(h_data);
-#endif
+    if(!globalCudaDisable)
+        cudaFree(d_data);
 
     free(h_data);
 
@@ -336,9 +332,8 @@ template<class T> void GPUArray<T>::memclear(unsigned int first)
     // clear memory
     memset(h_data+first, 0, sizeof(T)*(Num_elements-first));
 
-#ifdef ENABLE_CUDA
-    cudaMemset(d_data+first, 0, (Num_elements-first)*sizeof(T));
-#endif
+    if(!globalCudaDisable)
+        cudaMemset(d_data+first, 0, (Num_elements-first)*sizeof(T));
     }
 
 
@@ -494,22 +489,12 @@ template<class T> T* GPUArray<T>::resizeHostArray(unsigned int num_elements)
         throw std::runtime_error("Error allocating GPUArray.");
         }
 
-#ifdef ENABLE_CUDA
-//    if(RegisterArray)
-//        cudaHostRegister(h_tmp,Num_elements*sizeof(T),cudaHostRegisterDefault);
-#endif
-
     // clear memory
     memset(h_tmp, 0, sizeof(T)*num_elements);
 
     // copy over data
     unsigned int num_copy_elements = Num_elements > num_elements ? num_elements : Num_elements;
     memcpy(h_tmp, h_data, sizeof(T)*num_copy_elements);
-
-#ifdef ENABLE_CUDA
-//    if(RegisterArray)
-//        cudaHostUnregister(h_data);
-#endif
 
     // free old memory location
     free(h_data);
@@ -520,26 +505,27 @@ template<class T> T* GPUArray<T>::resizeHostArray(unsigned int num_elements)
 
 template<class T> T* GPUArray<T>::resizeDeviceArray(unsigned int num_elements)
     {
-#ifdef ENABLE_CUDA
-    // allocate resized array
-    T *d_tmp;
-    cudaMalloc(&d_tmp, num_elements*sizeof(T));
+    if(!globalCudaDisable)
+        {
+        // allocate resized array
+        T *d_tmp;
+        cudaMalloc(&d_tmp, num_elements*sizeof(T));
 
-    // clear memory
-    cudaMemset(d_tmp, 0, num_elements*sizeof(T));
+        // clear memory
+        cudaMemset(d_tmp, 0, num_elements*sizeof(T));
 
-    // copy over data
-    unsigned int num_copy_elements = Num_elements > num_elements ? num_elements : Num_elements;
-    cudaMemcpy(d_tmp, d_data, sizeof(T)*num_copy_elements,cudaMemcpyDeviceToDevice);
+        // copy over data
+        unsigned int num_copy_elements = Num_elements > num_elements ? num_elements : Num_elements;
+        cudaMemcpy(d_tmp, d_data, sizeof(T)*num_copy_elements,cudaMemcpyDeviceToDevice);
 
-    // free old memory location
-    cudaFree(d_data);
+        // free old memory location
+        cudaFree(d_data);
 
-    d_data = d_tmp;
-    return d_data;
-#else
+        d_data = d_tmp;
+        return d_data;
+        }
+    else
     return NULL;
-#endif
     }
 
 template<class T> void GPUArray<T>::resize(unsigned int num_elements)

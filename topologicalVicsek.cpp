@@ -1,3 +1,5 @@
+#include "globalCudaDisable.h"
+
 #include "std_include.h"
 
 #include "cuda_runtime.h"
@@ -9,6 +11,8 @@
 #include "vectorVicsekModel.h"
 #include "DatabaseNetCDFSPV.h"
 
+
+bool globalCudaDisable;
 /*!
 This file compiles to produce an executable that can be used to reproduce the timing information
 in the main cellGPU paper. It sets up a simulation that takes control of a voronoi model and a simple
@@ -20,6 +24,7 @@ Voronoi model's computeForces() funciton right before saving a state.
 */
 int main(int argc, char*argv[])
 {
+    globalCudaDisable = false;
     int c;
     //...some default parameters
     int numpts = 200; //number of cells
@@ -58,6 +63,9 @@ int main(int argc, char*argv[])
             default:
                        abort();
         };
+
+    if(USE_GPU < 0)
+        globalCudaDisable = true;
 
     char dataname[256];
     sprintf(dataname,"../data/test.nc");
