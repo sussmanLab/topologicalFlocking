@@ -73,6 +73,5 @@ target_link_libraries("${ARG}.out"
     CGAL::CGAL
     netcdf
     netcdf_c++
-    OpenMP::OpenMP_CXX
     )
 endforeach()

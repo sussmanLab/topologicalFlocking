@@ -1,8 +1,6 @@
 #ifndef GPUARRAY_H
 #define GPUARRAY_H
 
-#include "globalCudaDisable.h"
-
 /*
 This file is based on part of the HOOMD-blue project, released under the BSD 3-Clause License:
 
@@ -136,7 +134,8 @@ template<class T> class GPUArray
             };
         //!Resize the array...performs operations on both the CPU and GPU
         virtual void resize(unsigned int num_elements);
-
+        bool globalCudaDisable=false;
+        void disableGPU(){globalCudaDisable = true;};
     protected:
         inline void memclear(unsigned int first=0);
 

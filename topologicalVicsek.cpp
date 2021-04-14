@@ -1,5 +1,3 @@
-#include "globalCudaDisable.h"
-
 #include "std_include.h"
 
 #include "cuda_runtime.h"
@@ -11,8 +9,6 @@
 #include "vectorVicsekModel.h"
 #include "DatabaseNetCDFSPV.h"
 
-
-bool globalCudaDisable;
 /*!
 This file compiles to produce an executable that can be used to reproduce the timing information
 in the main cellGPU paper. It sets up a simulation that takes control of a voronoi model and a simple
@@ -82,6 +78,10 @@ int main(int argc, char*argv[])
     shared_ptr<scalarVicsekModel> vicsek = make_shared<scalarVicsekModel>(numpts,eta,mu,dt);//just switch which line is commented out to use scalar or vector viscek model...
     //shared_ptr<vectorVicsekModel> vicsek = make_shared<vectorVicsekModel>(numpts,eta,mu,dt);
     shared_ptr<voronoiModelBase> model = make_shared<voronoiModelBase>();
+    if (gpu)
+        model->setGPU();
+    else
+        model->setCPU();
     model->initializeVoronoiModelBase(numpts,oneRingSize);
 
     //set the cell activity to have D_r = 1. and a given v_0
