@@ -17,7 +17,6 @@ include_directories(
 
 add_library(database
     DatabaseNetCDF.cpp
-    DatabaseNetCDFAVM.cpp
     DatabaseNetCDFSPV.cpp
     DatabaseTextVoronoi.cpp
     vectorValueDatabase.cpp

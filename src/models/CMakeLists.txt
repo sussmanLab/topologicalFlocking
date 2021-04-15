@@ -20,21 +20,12 @@ add_library(model
     DelaunayGPU.cpp
     Simple2DActiveCell.cpp
     Simple2DCell.cpp
-    vertexModelBase.cpp
-    vertexQuadraticEnergy.cpp
-    vertexQuadraticEnergyWithTension.cpp
     voronoiModelBase.cpp
-    voronoiQuadraticEnergy.cpp
-    voronoiQuadraticEnergyWithTension.cpp
     )
 
 cuda_add_library(modelGPU
     DelaunayGPU.cu
     Simple2DCell.cu
-    vertexModelBase.cu
-    vertexQuadraticEnergy.cu
     voronoiModelBase.cu
-    voronoiQuadraticEnergy.cu
-    voronoiQuadraticEnergyWithTension.cu
     )
 

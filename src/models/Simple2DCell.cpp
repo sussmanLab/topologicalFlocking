@@ -6,8 +6,10 @@
 An extremely simple constructor that does nothing, but enforces default GPU operation
 */
 Simple2DCell::Simple2DCell(bool _gpu, bool _neverGPU) :
-    Ncells(0), Nvertices(0),GPUcompute(_gpu),neverGPU(_neverGPU),Energy(-1.0)
+    Ncells(0), Nvertices(0),Energy(-1.0)
     {
+    GPUcompute = _gpu;
+    neverGPU = _neverGPU;
     forcesUpToDate = false;
     Box = make_shared<periodicBoundaries>();
     if(neverGPU)

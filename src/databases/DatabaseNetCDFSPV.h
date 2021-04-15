@@ -1,7 +1,7 @@
 #ifndef DATABASE_SPV_H
 #define DATABASE_SPV_H
 
-#include "voronoiQuadraticEnergy.h"
+#include "voronoiModelBase.h"
 #include "DatabaseNetCDF.h"
 
 /*! \file DatabaseNetCDFSPV.h */

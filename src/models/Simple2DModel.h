@@ -69,7 +69,6 @@ class Simple2DModel
         int ompThreadNum = 1;
         //set number of threads
         virtual void setOmpThreads(int _number){ompThreadNum = _number;};
-
         //!Compute aspects of the model on the GPU
         bool GPUcompute;
         //!Whereas useGPU can be turned on and off, neverGPU is fixed

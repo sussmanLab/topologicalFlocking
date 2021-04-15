@@ -7,7 +7,7 @@
 /*!
 A simple constructor that sets many of the class member variables to zero
 */
-voronoiModelBase::voronoiModelBase(bool _gpu, bool _neverGPU) : Simpe2DActiveCell(_gpu,_neverGPU)
+voronoiModelBase::voronoiModelBase(bool _gpu, bool _neverGPU) : Simple2DActiveCell(_gpu,_neverGPU),
     cellsize(1.25), timestep(0),repPerFrame(0.0),skippedFrames(0),
     neighMax(0),neighMaxChange(false),GlobalFixes(0),globalOnly(true)
     {
@@ -29,7 +29,7 @@ voronoiModelBase::voronoiModelBase(bool _gpu, bool _neverGPU) : Simpe2DActiveCel
 void voronoiModelBase::reinitialize(int neighborGuess)
     {
     neighbors.resize(Ncells*neighborGuess);
-    delGPU.initialize(Ncells,neighborGuess,1.0,Box);
+    delGPU.initialize(Ncells,neighborGuess,1.0,Box,GPUcompute,neverGPU);
     globalTriangulationDelGPU();
     }
 /*!
@@ -56,7 +56,7 @@ void voronoiModelBase::initializeVoronoiModelBase(int n, int maxNeighGuess)
     initializeCellSorting();
 
     //DelaunayGPU initialization
-    delGPU.initialize(Ncells,maxNeighGuess,1.0,Box);
+    delGPU.initialize(Ncells,maxNeighGuess,1.0,Box,GPUcompute,neverGPU);
     delGPU.setSafetyMode(true);
     delGPU.setGPUcompute(GPUcompute);
 

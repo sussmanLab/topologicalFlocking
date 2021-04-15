@@ -20,7 +20,6 @@ Voronoi model's computeForces() funciton right before saving a state.
 */
 int main(int argc, char*argv[])
 {
-    globalCudaDisable = false;
     int c;
     //...some default parameters
     int numpts = 200; //number of cells
@@ -60,9 +59,6 @@ int main(int argc, char*argv[])
                        abort();
         };
 
-    if(USE_GPU < 0)
-        globalCudaDisable = true;
-
     char dataname[256];
     sprintf(dataname,"../data/test.nc");
     SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace,false);
@@ -75,9 +71,10 @@ int main(int argc, char*argv[])
     if (!gpu) 
         initializeGPU = false;
 
-    shared_ptr<scalarVicsekModel> vicsek = make_shared<scalarVicsekModel>(numpts,eta,mu,dt);//just switch which line is commented out to use scalar or vector viscek model...
-    //shared_ptr<vectorVicsekModel> vicsek = make_shared<vectorVicsekModel>(numpts,eta,mu,dt);
-    shared_ptr<voronoiModelBase> model = make_shared<voronoiModelBase>();
+    //just switch which line is commented out to use scalar or vector viscek model...
+    shared_ptr<scalarVicsekModel> vicsek = make_shared<scalarVicsekModel>(numpts,eta,mu,dt,initializeGPU,!initializeGPU);
+    //shared_ptr<vectorVicsekModel> vicsek = make_shared<vectorVicsekModel>(numpts,eta,mu,dt,initializeGPU,!initializeGPU);
+    shared_ptr<voronoiModelBase> model = make_shared<voronoiModelBase>(initializeGPU,!initializeGPU);
     if (gpu)
         model->setGPU();
     else
@@ -96,8 +93,8 @@ int main(int argc, char*argv[])
     sim->setIntegrationTimestep(dt);
     //set appropriate CPU and GPU flags
     sim->setCPUOperation(!initializeGPU);
-    if (!gpu) 
-        sim->setOmpThreads(abs(USE_GPU));
+//    if (!gpu) 
+//        sim->setOmpThreads(abs(USE_GPU));
     sim->setReproducible(reproducible);
 
     //run for a few initialization timesteps
