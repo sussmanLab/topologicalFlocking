@@ -8,7 +8,7 @@
 An extremely simple constructor that does nothing, but enforces default GPU operation
 \param the number of points in the system (cells or particles)
 */
-scalarVicsekModel::scalarVicsekModel(int _N,double _eta, double _mu, double _deltaT)
+scalarVicsekModel::scalarVicsekModel(int _N,double _eta, double _mu, double _deltaT, bool _gpu, bool _neverGPU) : simpleEquationOfMotion(_gpu,_neverGPU)
     {
     Timestep = 0;
     deltaT = _deltaT;
@@ -16,7 +16,13 @@ scalarVicsekModel::scalarVicsekModel(int _N,double _eta, double _mu, double _del
     eta = _eta;
     GPUcompute = true;
     Ndof = _N;
+    if(neverGPU)
+        {
+        newVelocityDirector.noGPU=true;
+        };
     noise.initialize(Ndof);
+    if(!neverGPU)
+        noise.initializeGPURNGs();
     displacements.resize(Ndof);
     newVelocityDirector.resize(Ndof);
     };

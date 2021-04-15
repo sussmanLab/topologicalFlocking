@@ -43,7 +43,6 @@ class noiseSource
         void initialize(int _N)
             {
             N=_N;
-            RNGs.resize(N);
             };
         //!set reproducibility
         void setReproducible(bool _rep){Reproducible = _rep;};

@@ -23,7 +23,7 @@ class updaterWithNoise : public updater
         virtual void setReproducible(bool rep)
             {
             noise.setReproducible(rep);
-            if (GPUcompute)
+            if (GPUcompute && !neverGPU)
                 noise.initializeGPURNGs(1337,0);
             };
         //!re-index the any RNGs associated with the e.o.m.

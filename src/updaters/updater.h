@@ -37,6 +37,9 @@ class updater
         //! set the phase
         void setPhase(int _p){Phase = _p;};
 
+        //!Whereas useGPU can be turned on and off, neverGPU is fixed
+        bool neverGPU;
+
         //!allow for spatial sorting to be called if necessary...
         virtual void spatialSorting(){};
 

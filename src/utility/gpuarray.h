@@ -111,9 +111,9 @@ template<class T> class ArrayHandle
 template<class T> class GPUArray
     {
     public:
-        GPUArray(bool _register=false);
+        GPUArray(bool neverGPU = false, bool _register=false);
         //! The most common constructor takes in the desired size of the array
-        GPUArray(unsigned int num_elements,bool _register=false);
+        GPUArray(unsigned int num_elements,bool neverGPU = false,bool _register=false);
         virtual ~GPUArray();
 
         GPUArray(const GPUArray& from);
@@ -134,8 +134,10 @@ template<class T> class GPUArray
             };
         //!Resize the array...performs operations on both the CPU and GPU
         virtual void resize(unsigned int num_elements);
-        bool globalCudaDisable=false;
-        void disableGPU(){globalCudaDisable = true;};
+
+        mutable data_location::Enum Data_location;    //!< Tracks the current location of the data
+        bool noGPU;
+        
     protected:
         inline void memclear(unsigned int first=0);
 
@@ -150,22 +152,17 @@ template<class T> class GPUArray
         mutable unsigned int Num_elements;            //!< Number of elements
         mutable bool Acquired;                //!< Tracks whether the data has been acquired
         bool RegisterArray;                //!< Tracks whether the data has been acquired
-        mutable data_location::Enum Data_location;    //!< Tracks the current location of the data
 
     protected:
-#ifdef ENABLE_CUDA
         mutable T* d_data; //!<pointer to memory on device
-#endif
         mutable T* h_data; //!<pointer to memory on host
 
     private:
         inline void allocate();
         inline void deallocate();
 
-#ifdef ENABLE_CUDA
         inline void memcpyDeviceToHost() const;
         inline void memcpyHostToDevice() const;
-#endif
 
         inline T* resizeHostArray(unsigned int num_elements);
 
@@ -192,20 +189,16 @@ template<class T> ArrayHandle<T>::~ArrayHandle()
 // ******************************************
 // GPUArray implementation
 // *****************************************
-template<class T> GPUArray<T>::GPUArray(bool _register) :
-        Num_elements(0), Acquired(false), Data_location(data_location::host), RegisterArray(_register),
-#ifdef ENABLE_CUDA
+template<class T> GPUArray<T>::GPUArray(bool neverGPU, bool _register) :
+        Num_elements(0), Acquired(false), Data_location(data_location::host), RegisterArray(_register),noGPU(neverGPU),
         d_data(NULL),
-#endif
         h_data(NULL)
     {
     }
 
-template<class T> GPUArray<T>::GPUArray(unsigned int num_elements, bool _register) :
-        Num_elements(num_elements), Acquired(false), Data_location(data_location::host), RegisterArray(_register),
-#ifdef ENABLE_CUDA
+template<class T> GPUArray<T>::GPUArray(unsigned int num_elements, bool neverGPU, bool _register) :
+        Num_elements(num_elements), Acquired(false), Data_location(data_location::host), RegisterArray(_register),noGPU(neverGPU),
         d_data(NULL),
-#endif
         h_data(NULL)
     {
     // allocate and clear memory
@@ -218,11 +211,9 @@ template<class T> GPUArray<T>::~GPUArray()
     deallocate();
     }
 
-template<class T> GPUArray<T>::GPUArray(const GPUArray& from) : Num_elements(from.Num_elements), 
+template<class T> GPUArray<T>::GPUArray(const GPUArray& from) : Num_elements(from.Num_elements),
         Acquired(false), Data_location(data_location::host),
-#ifdef ENABLE_CUDA
         d_data(NULL),
-#endif
         h_data(NULL)
     {
     // allocate and clear new memory the same size as the data in from
@@ -281,9 +272,7 @@ template<class T> void GPUArray<T>::swap(GPUArray& from)
     std::swap(Acquired, from.Acquired);
     std::swap(Data_location, from.Data_location);
     std::swap(RegisterArray,from.RegisterArray);
-#ifdef ENABLE_CUDA
     std::swap(d_data, from.d_data);
-#endif
     std::swap(h_data, from.h_data);
     }
 
@@ -300,8 +289,9 @@ template<class T> void GPUArray<T>::allocate()
         throw std::runtime_error("Error allocating GPUArray.");
         }
 
-    if(!globalCudaDisable)
-        cudaMalloc(&d_data, Num_elements*sizeof(T));
+//    if(RegisterArray)
+//        cudaHostRegister(h_data,Num_elements*sizeof(T),cudaHostRegisterDefault);
+    cudaMalloc(&d_data, Num_elements*sizeof(T));
     }
 
 template<class T> void GPUArray<T>::deallocate()
@@ -310,16 +300,15 @@ template<class T> void GPUArray<T>::deallocate()
     if (Num_elements == 0)
         return;
     // free memory
-    if(!globalCudaDisable)
-        cudaFree(d_data);
+    cudaFree(d_data);
+//    if(RegisterArray)
+//        cudaHostUnregister(h_data);
 
     free(h_data);
 
     // set pointers to NULL
     h_data = NULL;
-#ifdef ENABLE_CUDA
     d_data = NULL;
-#endif
     }
 
 template<class T> void GPUArray<T>::memclear(unsigned int first)
@@ -330,13 +319,10 @@ template<class T> void GPUArray<T>::memclear(unsigned int first)
 
     // clear memory
     memset(h_data+first, 0, sizeof(T)*(Num_elements-first));
-
-    if(!globalCudaDisable)
-        cudaMemset(d_data+first, 0, (Num_elements-first)*sizeof(T));
+    cudaMemset(d_data+first, 0, (Num_elements-first)*sizeof(T));
     }
 
 
-#ifdef ENABLE_CUDA
 template<class T> void GPUArray<T>::memcpyDeviceToHost() const
     {
     // don't do anything if there are no elements
@@ -356,7 +342,6 @@ template<class T> void GPUArray<T>::memcpyHostToDevice() const
 
     cudaMemcpy(d_data, h_data, sizeof(T)*Num_elements, cudaMemcpyHostToDevice);
     }
-#endif
 
 /*!
     Acquire does all the work, keeping track of when data needs to be copied, etc.
@@ -374,7 +359,6 @@ template<class T> T* GPUArray<T>::acquire(const access_location::Enum location, 
             {
             return h_data;
             }
-#ifdef ENABLE_CUDA
         else if (Data_location == data_location::hostdevice)
             {
             if (mode == access_mode::read)
@@ -413,13 +397,11 @@ template<class T> T* GPUArray<T>::acquire(const access_location::Enum location, 
 
             return h_data;
             }
-#endif
         else
             {
             throw std::runtime_error("Error acquiring data5");
             }
         }
-#ifdef ENABLE_CUDA
     else if (location == access_location::device)
         {
         if (Data_location == data_location::host)
@@ -468,7 +450,6 @@ template<class T> T* GPUArray<T>::acquire(const access_location::Enum location, 
             throw std::runtime_error("Error acquiring data2");
             }
         }
-#endif
     else
         {
         throw std::runtime_error("Error acquiring data1");
@@ -488,12 +469,18 @@ template<class T> T* GPUArray<T>::resizeHostArray(unsigned int num_elements)
         throw std::runtime_error("Error allocating GPUArray.");
         }
 
+//    if(RegisterArray)
+//        cudaHostRegister(h_tmp,Num_elements*sizeof(T),cudaHostRegisterDefault);
+
     // clear memory
     memset(h_tmp, 0, sizeof(T)*num_elements);
 
     // copy over data
     unsigned int num_copy_elements = Num_elements > num_elements ? num_elements : Num_elements;
     memcpy(h_tmp, h_data, sizeof(T)*num_copy_elements);
+
+//    if(RegisterArray)
+//        cudaHostUnregister(h_data);
 
     // free old memory location
     free(h_data);
@@ -504,35 +491,29 @@ template<class T> T* GPUArray<T>::resizeHostArray(unsigned int num_elements)
 
 template<class T> T* GPUArray<T>::resizeDeviceArray(unsigned int num_elements)
     {
-    if(!globalCudaDisable)
-        {
-        // allocate resized array
-        T *d_tmp;
-        cudaMalloc(&d_tmp, num_elements*sizeof(T));
+    // allocate resized array
+    T *d_tmp;
+    cudaMalloc(&d_tmp, num_elements*sizeof(T));
 
-        // clear memory
-        cudaMemset(d_tmp, 0, num_elements*sizeof(T));
+    // clear memory
+    cudaMemset(d_tmp, 0, num_elements*sizeof(T));
 
-        // copy over data
-        unsigned int num_copy_elements = Num_elements > num_elements ? num_elements : Num_elements;
-        cudaMemcpy(d_tmp, d_data, sizeof(T)*num_copy_elements,cudaMemcpyDeviceToDevice);
+    // copy over data
+    unsigned int num_copy_elements = Num_elements > num_elements ? num_elements : Num_elements;
+    cudaMemcpy(d_tmp, d_data, sizeof(T)*num_copy_elements,cudaMemcpyDeviceToDevice);
 
-        // free old memory location
-        cudaFree(d_data);
+    // free old memory location
+    cudaFree(d_data);
 
-        d_data = d_tmp;
-        return d_data;
-        }
-    else
-    return NULL;
+    d_data = d_tmp;
+    return d_data;
     }
 
 template<class T> void GPUArray<T>::resize(unsigned int num_elements)
     {
     resizeHostArray(num_elements);
-#ifdef ENABLE_CUDA
-    resizeDeviceArray(num_elements);
-#endif
+    if(!noGPU)
+        resizeDeviceArray(num_elements);
     Num_elements = num_elements;
     }
 

@@ -9,7 +9,7 @@
 An extremely simple constructor that does nothing, but enforces default GPU operation
 \param the number of points in the system (cells or particles)
 */
-vectorVicsekModel::vectorVicsekModel(int _N,double _eta, double _mu, double _deltaT)
+vectorVicsekModel::vectorVicsekModel(int _N,double _eta, double _mu, double _deltaT, bool _gpu,bool _neverGPU) : simpleEquationOfMotion(_gpu,_neverGPU)
     {
     Timestep = 0;
     deltaT = _deltaT;
@@ -17,6 +17,12 @@ vectorVicsekModel::vectorVicsekModel(int _N,double _eta, double _mu, double _del
     eta = _eta;
     GPUcompute = true;
     Ndof = _N;
+    if(neverGPU)
+        {
+        newVelocityDirector.noGPU=true;
+        };
+    if(!neverGPU)
+        noise.initializeGPURNGs();
     noise.initialize(Ndof);
     displacements.resize(Ndof);
     newVelocityDirector.resize(Ndof);

@@ -11,7 +11,7 @@ class vectorVicsekModel : public simpleEquationOfMotion
     {
     public:
         //!base constructor sets the default time step size to unity and uses the GPU
-        vectorVicsekModel(int N, double _eta, double _mu=1.0, double _deltaT=1.0);
+        vectorVicsekModel(int N, double _eta, double _mu=1.0, double _deltaT=1.0, bool _gpu = true, bool _neverGPU=false);
 
         //!the fundamental function that models will call, using vectors of different data structures
         virtual void integrateEquationsOfMotion();
