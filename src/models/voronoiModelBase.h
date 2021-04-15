@@ -18,14 +18,14 @@
  * those triangulations are valid on either the CPU or GPU, and locally repair
  * invalid triangulations on the CPU.
 
- * Voronoi models have their topology taken care of by the underlying triangulation, and so child 
+ * Voronoi models have their topology taken care of by the underlying triangulation, and so child
    classes just need to implement an energy functions (and corresponding force law)
  */
 class voronoiModelBase : public Simple2DActiveCell
     {
     public:
         //!The constructor!
-        voronoiModelBase();
+        voronoiModelBase(bool _gpu = true, bool _neverGPU=false);
         //!A default initialization scheme
         void initializeVoronoiModelBase(int n, int maxNeighGuess = 16);
         void reinitialize(int neighborGuess);
@@ -139,7 +139,7 @@ class voronoiModelBase : public Simple2DActiveCell
 
     protected:
         //!The size of the cell list's underlying grid
-        double cellsize;            
+        double cellsize;
         //!An upper bound for the maximum number of neighbors that any cell has
         int neighMax;
 

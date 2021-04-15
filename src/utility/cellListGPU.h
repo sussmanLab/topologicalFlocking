@@ -24,6 +24,8 @@ class cellListGPU
         //! constructor with points, a box, and a size for the underlying grid
         cellListGPU(double a, vector<double> &points, periodicBoundaries &bx);
 
+        void setNeverGPU(bool _neverGPU);
+
         //!Set the object's points to a given vector
         void setParticles(const vector<double> &points);
         //!Set the object's points to a given vector of double2s

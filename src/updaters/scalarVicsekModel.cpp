@@ -106,7 +106,7 @@ void scalarVicsekModel::integrateEquationsOfMotionCPU()
             newVel.data[ii] = newVel.data[ii] + vel.data[neighs.data[activeModel->n_idx(jj,ii)]];
             }
         m +=1; //account for self-alignment
-        
+
         //normalize and rotate new director
         double u = noise.getRealUniform(-.5,.5);
         double theta = 2.0*PI*u*eta;

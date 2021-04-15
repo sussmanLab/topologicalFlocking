@@ -19,7 +19,7 @@ class Simple2DCell : public Simple2DModel
     {
     public:
         //!initialize member variables to some defaults
-        Simple2DCell();
+        Simple2DCell(bool _gpu = true, bool _neverGPU=false);
 
         //! initialize class' data structures and set default values
         void initializeSimple2DCell(int n);
@@ -261,9 +261,6 @@ class Simple2DCell : public Simple2DModel
 
     //protected member variables
     protected:
-        //!Compute aspects of the model on the GPU
-        bool GPUcompute;
-
         //! A flag that determines whether the GPU RNG is the same every time.
         bool Reproducible;
         //! A source of noise for random cell initialization

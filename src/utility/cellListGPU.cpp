@@ -33,6 +33,19 @@ cellListGPU::cellListGPU(vector<double> &points)
     }
 
 /*!
+*/
+void cellListGPU::setNeverGPU(bool _neverGPU)
+    {
+    if(_neverGPU)
+        {
+        particles.noGPU=true;
+        cell_sizes.noGPU=true;
+        idxs.noGPU=true;
+        assist.noGPU=true;
+        }
+    }
+
+/*!
 \param nn the number of particles to sort
  */
 void cellListGPU::setNp(int nn)

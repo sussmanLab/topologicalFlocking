@@ -18,7 +18,7 @@ class Simple2DActiveCell : public Simple2DCell
     //public functions first
     public:
         //!A simple constructor
-        Simple2DActiveCell();
+        Simple2DActiveCell(bool _gpu = true, bool _neverGPU=false);
 
         //! initialize class' data structures and set default values
         void initializeSimple2DActiveCell(int n);
@@ -85,10 +85,10 @@ class Simple2DActiveCell : public Simple2DCell
 
             vParallel.x= cos(thetaAve);
             vParallel.y= sin(thetaAve);
-            
+
             vPerpendicular.x= -vParallel.y;
             vPerpendicular.y=  vParallel.x;
-            
+
             return sqrt(globalV.x*globalV.x + globalV.y*globalV.y);
             };
 

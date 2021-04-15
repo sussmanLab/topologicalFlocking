@@ -7,13 +7,23 @@
 /*!
 A simple constructor that sets many of the class member variables to zero
 */
-voronoiModelBase::voronoiModelBase() :
+voronoiModelBase::voronoiModelBase(bool _gpu, bool _neverGPU) : Simpe2DActiveCell(_gpu,_neverGPU)
     cellsize(1.25), timestep(0),repPerFrame(0.0),skippedFrames(0),
     neighMax(0),neighMaxChange(false),GlobalFixes(0),globalOnly(true)
     {
     //set cellsize to about unity...magic number should be of order 1
     //when the box area is of order N (i.e. on average one particle per bin)
-
+    if(neverGPU)
+        {
+        external_forces.noGPU=true;
+        exclusions.noGPU=true;
+        NeighIdxs.noGPU=true;
+        anyCircumcenterTestFailed.noGPU=true;
+        repair.noGPU=true;
+        delSets.noGPU=true;
+        delOther.noGPU=true;
+        forceSets.noGPU=true;
+        }
     };
 
 void voronoiModelBase::reinitialize(int neighborGuess)
@@ -174,7 +184,7 @@ void voronoiModelBase::globalTriangulationDelGPU(bool verbose)
         resizeAndReset();
 
     delGPU.globalDelaunayTriangulation(cellPositions,neighbors,neighborNum);
-    
+
     neighMax = delGPU.MaxSize;
     n_idx = Index2D(neighMax,Ncells);
     if(neighbors.getNumElements() != Ncells*neighMax)
@@ -372,8 +382,8 @@ void voronoiModelBase::enforceTopology()
     int oldNeighMax = delGPU.MaxSize;
     if(neighbors.getNumElements() != Ncells*oldNeighMax)
         resizeAndReset();
-    
-    
+
+
     delGPU.testAndRepairDelaunayTriangulation(cellPositions,neighbors,neighborNum);
 //    globalTriangulationDelGPU();
 
@@ -391,7 +401,7 @@ void voronoiModelBase::enforceTopology()
         resizeAndReset();
         globalTriangulationDelGPU();
         }
-        
+
     allDelSets();
     };
 

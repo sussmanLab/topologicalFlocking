@@ -20,9 +20,9 @@ class DelaunayGPU
 	public:
 
 		//!blank constructor
-		DelaunayGPU();
+		DelaunayGPU(bool _gpu = true, bool _neverGPU=false);
         //!Constructor + initialiation
-        DelaunayGPU(int N, int maximumNeighborsGuess, double cellSize, PeriodicBoxPtr bx);
+        DelaunayGPU(int N, int maximumNeighborsGuess, double cellSize, PeriodicBoxPtr bx,bool _gpu = true, bool _neverGPU=false);
 		//!Destructor
 		~DelaunayGPU(){};
 
@@ -33,14 +33,14 @@ class DelaunayGPU
         void testAndRepairDelaunayTriangulation(GPUArray<double2> &points, GPUArray<int> &GPUTriangulation, GPUArray<int> &cellNeighborNum);
 
         //!initialization function
-        void initialize(int N, int maximumNeighborsGuess, double cellSize, PeriodicBoxPtr bx);
+        void initialize(int N, int maximumNeighborsGuess, double cellSize, PeriodicBoxPtr bx,bool _gpu = true, bool _neverGPU=false);
         //!function call to change the maximum number of neighbors per point
         void resize(const int nmax);
-        //! update the size of the cell list bins 
+        //! update the size of the cell list bins
         void setCellListSize(double csize);
         //!Only update the cell list
         void updateList(GPUArray<double2> &points);
-        //!Set the box from a 
+        //!Set the box from a
         void setBox(PeriodicBoxPtr bx){Box=bx;};
         //!Set the safetyMode flag...If safetyMode is false and the assumptions are not satisfied, program will be wrong with (possibly) no warning!
         void setSafetyMode(bool _sm){safetyMode=_sm;};
@@ -117,6 +117,8 @@ class DelaunayGPU
         GPUArray<int> circumcirclesAssist;
         //!A flag that tells the code to use either CPU or GPU routines
         bool GPUcompute;
+        //!A flag to not initialize memory on device
+        bool neverGPU;
         //!Allow openMP threads
         int ompThreadNum = 1;
 

@@ -5,11 +5,35 @@
 /*!
 An extremely simple constructor that does nothing, but enforces default GPU operation
 */
-Simple2DCell::Simple2DCell() :
-    Ncells(0), Nvertices(0),GPUcompute(true),Energy(-1.0)
+Simple2DCell::Simple2DCell(bool _gpu, bool _neverGPU) :
+    Ncells(0), Nvertices(0),GPUcompute(_gpu),neverGPU(_neverGPU),Energy(-1.0)
     {
     forcesUpToDate = false;
     Box = make_shared<periodicBoundaries>();
+    if(neverGPU)
+        {
+        cellPositions.noGPU=true;
+        vertexPositions.noGPU=true;
+        cellVelocities.noGPU=true;
+        cellMasses.noGPU=true;
+        vertexVelocities.noGPU=true;
+        vertexMasses.noGPU=true;
+        vertexNeighbors.noGPU=true;
+        vertexCellNeighbors.noGPU=true;
+        neighborNum.noGPU=true;
+        neighbors.noGPU=true;
+        cellVertexNum.noGPU=true;
+        vertexForces.noGPU=true;
+        cellForces.noGPU=true;
+        cellType.noGPU=true;
+        Moduli.noGPU=true;
+        AreaPeri.noGPU=true;
+        AreaPeriPreferences.noGPU=true;
+        cellVertices.noGPU=true;
+        voroCur.noGPU=true;
+        voroLastNext.noGPU=true;
+        displacements.noGPU=true;
+        }
     };
 
 /*!

@@ -3,18 +3,31 @@
 #include "cellListGPU.cuh"
 #include "utilities.cuh"
 
-DelaunayGPU::DelaunayGPU() :
-	cellsize(1.10), cListUpdated(false), Ncells(0), NumCircumcircles(0), GPUcompute(false)
+DelaunayGPU::DelaunayGPU(bool _gpu, bool _neverGPU) :
+	cellsize(1.10), cListUpdated(false), Ncells(0), NumCircumcircles(0), GPUcompute(_gpu),neverGPU(_neverGPU)
     {
     }
 
-DelaunayGPU::DelaunayGPU(int N, int maximumNeighborsGuess, double cellSize, PeriodicBoxPtr bx)
+DelaunayGPU::DelaunayGPU(int N, int maximumNeighborsGuess, double cellSize, PeriodicBoxPtr bx, bool _gpu, bool _neverGPU) : GPUcompute(_gpu),neverGPU(_neverGPU)
     {
-	initialize(N,maximumNeighborsGuess,cellSize,bx);
+	initialize(N,maximumNeighborsGuess,cellSize,bx,GPUcompute,neverGPU);
 	}
 
-void DelaunayGPU::initialize(int N, int maximumNeighborsGuess, double cellSize, PeriodicBoxPtr bx)
+void DelaunayGPU::initialize(int N, int maximumNeighborsGuess, double cellSize, PeriodicBoxPtr bx, bool _gpu, bool _neverGPU)
     {
+	GPUcompute =_gpu;
+	neverGPU=_neverGPU;
+	if(neverGPU)
+		{
+		GPUVoroCur.noGPU=true;
+		GPUDelNeighsPos.noGPU=true;
+		GPUPointIndx.noGPU=true;
+		delGPUcircumcircles.noGPU=true;
+		repair.noGPU=true;
+		maxOneRingSize.noGPU=true;
+		circumcirclesAssist.noGPU=true;
+		cList.setNeverGPU(neverGPU);
+		};
     prof.start("initialization");
     Ncells = N;
     NumCircumcircles = 0;
@@ -591,7 +604,7 @@ void DelaunayGPU::testAndRepairDelaunayTriangulation(GPUArray<double2> &points, 
     else
         testTriangulationCPU(points);
     prof.end("testCCS");
-    
+
     //locally repair
     prof.start("repairPoints");
     locallyRepairDelaunayTriangulation(points,GPUTriangulation,cellNeighborNum,repair);

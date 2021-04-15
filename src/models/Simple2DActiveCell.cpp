@@ -6,10 +6,16 @@
 /*!
 An extremely simple constructor that does nothing, but enforces default GPU operation
 */
-Simple2DActiveCell::Simple2DActiveCell()
+Simple2DActiveCell::Simple2DActiveCell(bool _gpu, bool _neverGPU) : Simpe2DCell(_gpu,_neverGPU)
     {
     Timestep=0;
     setDeltaT(0.01);
+    if(neverGPU)
+        {
+        cellDirectors.noGPU=true;
+        cellDirectorForces.noGPU=true;
+        Motility.noGPU=true;
+        }
     };
 
 /*!
