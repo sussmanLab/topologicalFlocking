@@ -10,13 +10,9 @@
 #include "DatabaseNetCDFSPV.h"
 
 /*!
-This file compiles to produce an executable that can be used to reproduce the timing information
-in the main cellGPU paper. It sets up a simulation that takes control of a voronoi model and a simple
-model of active motility
-NOTE that in the output, the forces and the positions are not, by default, synchronized! The NcFile
-records the force from the last time "computeForces()" was called, and generally the equations of motion will
-move the positions. If you want the forces and the positions to be sync'ed, you should call the
-Voronoi model's computeForces() funciton right before saving a state.
+ * This file is a simple implementation of either the scalar or vectorial vicsek model,
+ * where neighbors are chosen according to an instantaneous Voronoi tessellation of the point set.
+ * Good stuff.
 */
 int main(int argc, char*argv[])
 {
@@ -60,8 +56,8 @@ int main(int argc, char*argv[])
         };
 
     char dataname[256];
-    sprintf(dataname,"../data/test.nc");
-    SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace,false);
+    //sprintf(dataname,"../data/test.nc");
+    //SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace,false);
 
     profiler prof("voroVicsek");
 
@@ -74,8 +70,10 @@ int main(int argc, char*argv[])
         initializeGPU = false;
 
     //just switch which line is commented out to use scalar or vector viscek model...
+    //for both the updaters and the model below the "initializeGPU,!initializeGPU" business is a kludge to declare "I'm not using the GPU and I never will" if gpu < 0.It's ugly, but it will stop memory from being allocated on devices that aren't being used for computation.
     shared_ptr<scalarVicsekModel> vicsek = make_shared<scalarVicsekModel>(numpts,eta,mu,dt,initializeGPU,!initializeGPU);
     //shared_ptr<vectorVicsekModel> vicsek = make_shared<vectorVicsekModel>(numpts,eta,mu,dt,initializeGPU,!initializeGPU);
+    //
     shared_ptr<voronoiModelBase> model = make_shared<voronoiModelBase>(initializeGPU,!initializeGPU);
     if (gpu)
         model->setGPU();
@@ -84,7 +82,6 @@ int main(int argc, char*argv[])
     model->initializeVoronoiModelBase(numpts,oneRingSize);
 
     //set the cell activity to have D_r = 1. and a given v_0
-    //eventually use Dr rather than eta, to allow heterogeneous noise?
     model->setv0Dr(v0,1.0);
 
     //combine the equation of motion and the cell configuration in a "Simulation"
@@ -95,8 +92,6 @@ int main(int argc, char*argv[])
     sim->setIntegrationTimestep(dt);
     //set appropriate CPU and GPU flags
     sim->setCPUOperation(!initializeGPU);
-//    if (!gpu)
-//        sim->setOmpThreads(abs(USE_GPU));
     sim->setReproducible(reproducible);
 
     //run for a few initialization timesteps
@@ -107,8 +102,6 @@ int main(int argc, char*argv[])
         };
     printf("Finished with initialization\n");
 
-    //run for additional timesteps, compute dynamical features, and record timing information
-    //t1=clock();
     for(int ii = 0; ii < tSteps; ++ii)
         {
 
@@ -122,11 +115,7 @@ int main(int argc, char*argv[])
         if(ii%10 ==0)
             prof.end();
         };
-    //t2=clock();
-    //double steptime = (t2-t1)/(double)CLOCKS_PER_SEC/tSteps;
-    //cout << "timestep ~ " << steptime << " per frame; " << endl;
+
     prof.print();
-    if(initializeGPU)
-        cudaDeviceReset();
     return 0;
 };
