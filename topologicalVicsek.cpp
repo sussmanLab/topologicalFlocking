@@ -1,7 +1,7 @@
 #include "std_include.h"
 
 #include "cuda_runtime.h"
-#include "cuda_profiler_api.h"
+#include "profiler.h"
 
 #include "Simulation.h"
 #include "voronoiModelBase.h"
@@ -14,7 +14,7 @@ This file compiles to produce an executable that can be used to reproduce the ti
 in the main cellGPU paper. It sets up a simulation that takes control of a voronoi model and a simple
 model of active motility
 NOTE that in the output, the forces and the positions are not, by default, synchronized! The NcFile
-records the force from the last time "computeForces()" was called, and generally the equations of motion will 
+records the force from the last time "computeForces()" was called, and generally the equations of motion will
 move the positions. If you want the forces and the positions to be sync'ed, you should call the
 Voronoi model's computeForces() funciton right before saving a state.
 */
@@ -63,12 +63,14 @@ int main(int argc, char*argv[])
     sprintf(dataname,"../data/test.nc");
     SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace,false);
 
+    profiler prof("voroVicsek");
+
     clock_t t1,t2; //clocks for timing information
     bool reproducible = true; // if you want random numbers with a more random seed each run, set this to false
     //check to see if we should run on a GPU
     bool initializeGPU = true;
     bool gpu = chooseGPU(USE_GPU);
-    if (!gpu) 
+    if (!gpu)
         initializeGPU = false;
 
     //just switch which line is commented out to use scalar or vector viscek model...
@@ -93,7 +95,7 @@ int main(int argc, char*argv[])
     sim->setIntegrationTimestep(dt);
     //set appropriate CPU and GPU flags
     sim->setCPUOperation(!initializeGPU);
-//    if (!gpu) 
+//    if (!gpu)
 //        sim->setOmpThreads(abs(USE_GPU));
     sim->setReproducible(reproducible);
 
@@ -106,20 +108,24 @@ int main(int argc, char*argv[])
     printf("Finished with initialization\n");
 
     //run for additional timesteps, compute dynamical features, and record timing information
-    t1=clock();
-    cudaProfilerStart();
+    //t1=clock();
     for(int ii = 0; ii < tSteps; ++ii)
         {
 
         if(ii%10 ==0)
-            ncdat.WriteState(model);
+            {
+            prof.start();
+//            ncdat.WriteState(model);
+            }
 
         sim->performTimestep();
+        if(ii%10 ==0)
+            prof.end();
         };
-    cudaProfilerStop();
-    t2=clock();
-    double steptime = (t2-t1)/(double)CLOCKS_PER_SEC/tSteps;
-    cout << "timestep ~ " << steptime << " per frame; " << endl;
+    //t2=clock();
+    //double steptime = (t2-t1)/(double)CLOCKS_PER_SEC/tSteps;
+    //cout << "timestep ~ " << steptime << " per frame; " << endl;
+    prof.print();
     if(initializeGPU)
         cudaDeviceReset();
     return 0;
