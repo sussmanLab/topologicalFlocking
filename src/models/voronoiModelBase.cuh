@@ -18,17 +18,8 @@ A file providing an interface to the relevant cuda calls for the base voronoi mo
 
 //!update NeighIdx data structure on the gpu
 bool gpu_update_neighIdxs(int *neighborNum,
-                          int *neighNumScan,
-                          int2 *neighIdxs,
                           int &NeighIdxNum,
                           int Ncells);
-//!update delSets structures on the GPU
-bool gpu_all_del_sets(int *neighborNum,
-                      int *neighbors,
-                      int2 *delSets,
-                      int * delOther,
-                      int Ncells,
-                      Index2D &nIdx);
 
 //!Test an array of circumcenters for the empty-circumcircle property
 bool gpu_test_circumcenters(

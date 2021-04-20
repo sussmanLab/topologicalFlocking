@@ -75,8 +75,6 @@ class voronoiModelBase : public Simple2DActiveCell
 
         //!Update the cell list structure after particles have moved
         void updateCellList();
-        //!update the NieghIdxs data structure
-        void updateNeighIdxs();
         //set number of threads
         virtual void setOmpThreads(int _number){ompThreadNum = _number;delGPU.setOmpThreads(_number);};
 
@@ -94,11 +92,7 @@ class voronoiModelBase : public Simple2DActiveCell
         void repairTriangulation(vector<int> &fixlist);
         //! after a CGAL triangulation, need to populate delGPU's voroCur structure in order for compute geometry to work
         void populateVoroCur();
-        //! call getDelSets for all particles
-        void allDelSets();
 
-        //! Maintain the delSets and delOther data structure for particle i
-        bool getDelSets(int i);
         //!resize all neighMax-related arrays
         void resetLists();
         //!do resize and resetting operations common to cellDivision and cellDeath
@@ -136,11 +130,11 @@ class voronoiModelBase : public Simple2DActiveCell
         //!An upper bound for the maximum number of neighbors that any cell has
         int neighMax;
 
-        //!An array that holds (particle, neighbor_number) info to avoid intra-warp divergence in GPU
-        //!-based force calculations that might be used by child classes
-        GPUArray<int2> NeighIdxs;
-        //!A utility integer to help with NeighIdxs
+        //!A utility integer
         int NeighIdxNum;
+
+        //!evaluate the total number of neighbors of each point
+        int getNeighIdxNum();
 
         //!A flag that can be accessed by child classes... serves as notification that any change in the network topology has occured
         GPUArray<int> anyCircumcenterTestFailed;
@@ -149,7 +143,7 @@ class voronoiModelBase : public Simple2DActiveCell
         //!A flag that notifies that the maximum number of neighbors may have changed, necessitating resizing of some data arrays
         bool neighMaxChange;
 
-        //!A a vector of zeros (everything is fine) and ones (that index needs to be repaired)...also used as an assist array in updateNeighIdxs
+        //!A a vector of zeros (everything is fine) and ones (that index needs to be repaired)
         GPUArray<int> repair;
         //!A smaller vector that, after testing the triangulation, contains the particle indices that need their local topology to be updated.
         vector<int> NeedsFixing;
@@ -163,16 +157,6 @@ class voronoiModelBase : public Simple2DActiveCell
         bool globalOnly;
         //!Count the number of times that testAndRepair has been called, separately from the derived class' time
         int timestep;
-
-        //!delSet.data[n_idx(nn,i)] are the previous and next consecutive delaunay neighbors
-        /*! These are orientationally ordered, of point i (for use in computing forces on GPU)
-        */
-        GPUArray<int2> delSets;
-        //!delOther.data[n_idx(nn,i)] contains the index of the "other" delaunay neighbor.
-        /*!
-        i.e., the mutual neighbor of delSet.data[n_idx(nn,i)].y and delSet.data[n_idx(nn,i)].z that isn't point i
-        */
-        GPUArray<int> delOther;
 
     //be friends with the associated Database class so it can access data to store or read
     friend class SPVDatabaseNetCDF;

@@ -15,11 +15,8 @@ voronoiModelBase::voronoiModelBase(bool _gpu, bool _neverGPU) : Simple2DActiveCe
     //when the box area is of order N (i.e. on average one particle per bin)
     if(neverGPU)
         {
-        NeighIdxs.noGPU=true;
         anyCircumcenterTestFailed.noGPU=true;
         repair.noGPU=true;
-        delSets.noGPU=true;
-        delOther.noGPU=true;
         }
     };
 
@@ -38,8 +35,6 @@ void voronoiModelBase::initializeVoronoiModelBase(int n, int maxNeighGuess)
     //set particle number and call initializers
     Ncells = n;
     initializeSimple2DActiveCell(Ncells);
-
-    NeighIdxs.resize(6*(Ncells));
 
     repair.resize(Ncells);
     displacements.resize(Ncells);
@@ -142,8 +137,25 @@ void voronoiModelBase::moveDegreesOfFreedom(GPUArray<double2> &displacements,dou
         movePointsCPU(displacements,scale);
     };
 
+ int voronoiModelBase::getNeighIdxNum()
+    {
+    if(GPUcompute)
+        {
+        ArrayHandle<int> neighnum(neighborNum,access_location::device,access_mode::read);
+        gpu_update_neighIdxs(neighnum.data,NeighIdxNum,Ncells);
+        }
+    else
+        {
+        ArrayHandle<int> neighnum(neighborNum,access_location::host,access_mode::read);
+        NeighIdxNum = 0;
+        for (int ii = 0; ii < Ncells; ++ii)
+             NeighIdxNum+=neighnum.data[ii];
+        }
+    return NeighIdxNum;
+    }
+
 /*!
-Call the delaunayGPU class to get a complete triangulation of the current point set. Afterwards, call updateNeighIdxs
+Call the delaunayGPU class to get a complete triangulation of the current point set.e
 */
 void voronoiModelBase::globalTriangulationDelGPU(bool verbose)
     {
@@ -163,8 +175,8 @@ void voronoiModelBase::globalTriangulationDelGPU(bool verbose)
         {
         resizeAndReset();
         }
-    updateNeighIdxs();
     //global rescue if needed
+    NeighIdxNum = getNeighIdxNum();
     if(NeighIdxNum != 6* Ncells)
         {
         cout << "attempting CGAL rescue -- inconsistent local topologies" << endl;
@@ -176,8 +188,7 @@ void voronoiModelBase::globalTriangulationDelGPU(bool verbose)
 /*!
 This function calls the DelaunayCGAL class to determine the Delaunay triangulation of the entire
 square periodic domain this method is, obviously, better than the version written by DMS, so
-should be the default option. In addition to performing a triangulation, the function also automatically
-calls updateNeighIdxs
+should be the default option. 
 */
 void voronoiModelBase::globalTriangulationCGAL(bool verbose)
     {
@@ -218,7 +229,6 @@ void voronoiModelBase::globalTriangulationCGAL(bool verbose)
         neighbors.resize(neighMax*Ncells);
         neighMaxChange = true;
         };
-    updateNeighIdxs();
 
     //store data in gpuarrays
     {
@@ -295,38 +305,6 @@ void voronoiModelBase::populateVoroCur()
     };
 
 /*!
-\post the NeighIdx data structure is updated, which helps cut down on the number of inactive
-threads in the force set computation function
-*/
-void voronoiModelBase::updateNeighIdxs()
-    {
-    if (GPUcompute)
-        {
-        ArrayHandle<int> neighnum(neighborNum,access_location::device,access_mode::read);
-        ArrayHandle<int> neighNumScan(repair,access_location::device,access_mode::overwrite);
-        ArrayHandle<int2> d_nidx(NeighIdxs,access_location::device,access_mode::overwrite);
-        gpu_update_neighIdxs(neighnum.data, neighNumScan.data,d_nidx.data,NeighIdxNum,Ncells);
-        }
-    else
-        {
-        ArrayHandle<int> neighnum(neighborNum,access_location::host,access_mode::read);
-        ArrayHandle<int2> h_nidx(NeighIdxs,access_location::host,access_mode::overwrite);
-        int idx = 0;
-        for (int ii = 0; ii < Ncells; ++ii)
-            {
-            int nmax = neighnum.data[ii];
-            for (int nn = 0; nn < nmax; ++nn)
-                {
-                h_nidx.data[idx].x = ii;
-                h_nidx.data[idx].y = nn;
-                idx+=1;
-                };
-            };
-        NeighIdxNum = idx;
-        }
-    };
-
-/*!
 When sortPeriod < 0, this routine does not get called
 \post call Simple2DActiveCell's underlying Hilbert sort scheme, and re-index voronoiModelBase's extra arrays
 */
@@ -337,7 +315,6 @@ void voronoiModelBase::spatialSorting()
     globalTriangulationDelGPU();
     //get new DelSets and DelOthers
     resetLists();
-    allDelSets();
     };
 
 /*!
@@ -368,8 +345,6 @@ void voronoiModelBase::enforceTopology()
         resizeAndReset();
         globalTriangulationDelGPU();
         }
-
-    allDelSets();
     };
 
 //read a triangulation from a text file...used only for testing purposes. Any other use should call the Database class (see inc/Database.h")
@@ -854,7 +829,7 @@ vector<double> voronoiModelBase::d2Hdridrj(double2 rj, double2 rk, int jj)
 
 /*!
 As the code is modified, all GPUArrays whose size depend on neighMax should be added to this function
-\post voroCur,voroLastNext, delSets, delOther, and grow to size neighMax*Ncells
+\post voroCur,voroLastNext, and grow to size neighMax*Ncells
 */
 void voronoiModelBase::resetLists()
     {
@@ -862,78 +837,6 @@ void voronoiModelBase::resetLists()
     neighbors.resize( Ncells*neighMax);
     voroCur.resize(neighMax*Ncells);
     voroLastNext.resize(neighMax*Ncells);
-    delSets.resize(neighMax*Ncells);
-    delOther.resize(neighMax*Ncells);
-    };
-
-/*!
-\param i the cell in question
-\post the delSet and delOther data structure for cell i is updated. Recall that
-delSet.data[n_idx(nn,i)] is an int2; the x and y parts store the index of the previous and next
-Delaunay neighbor, ordered CCW. delOther contains the mutual neighbor of delSet.data[n_idx(nn,i)].y
-and delSet.data[n_idx(nn,i)].z that isn't cell i
-*/
-bool voronoiModelBase::getDelSets(int i)
-    {
-    ArrayHandle<int> neighnum(neighborNum,access_location::host,access_mode::read);
-    ArrayHandle<int> ns(neighbors,access_location::host,access_mode::read);
-    ArrayHandle<int2> ds(delSets,access_location::host,access_mode::readwrite);
-    ArrayHandle<int> dother(delOther,access_location::host,access_mode::readwrite);
-
-    int iNeighs = neighnum.data[i];
-    int nm2,nm1,n1,n2;
-    nm2 = ns.data[n_idx(iNeighs-3,i)];
-    nm1 = ns.data[n_idx(iNeighs-2,i)];
-    n1 = ns.data[n_idx(iNeighs-1,i)];
-
-    for (int nn = 0; nn < iNeighs; ++nn)
-        {
-        n2 = ns.data[n_idx(nn,i)];
-        int nextNeighs = neighnum.data[n1];
-        for (int nn2 = 0; nn2 < nextNeighs; ++nn2)
-            {
-            int testPoint = ns.data[n_idx(nn2,n1)];
-            if(testPoint == nm1)
-                {
-                dother.data[n_idx(nn,i)] = ns.data[n_idx((nn2+1)%nextNeighs,n1)];
-                break;
-                };
-            };
-        ds.data[n_idx(nn,i)].x= nm1;
-        ds.data[n_idx(nn,i)].y= n1;
-
-        //is "delOther" a copy of i or either of the delSet points? if so, the local topology is inconsistent
-        if(nm1 == dother.data[n_idx(nn,i)] || n1 == dother.data[n_idx(nn,i)] || i == dother.data[n_idx(nn,i)])
-            return false;
-
-        nm2=nm1;
-        nm1=n1;
-        n1=n2;
-
-        };
-    return true;
-    };
-
-
-/*!
-Calls updateNeighIdxs and then getDelSets(i) for all cells i
-*/
-void voronoiModelBase::allDelSets()
-    {
-    updateNeighIdxs();
-    if(GPUcompute)
-        {
-        ArrayHandle<int> neighnum(neighborNum,access_location::device,access_mode::read);
-        ArrayHandle<int> ns(neighbors,access_location::device,access_mode::read);
-        ArrayHandle<int2> ds(delSets,access_location::device,access_mode::readwrite);
-        ArrayHandle<int> dother(delOther,access_location::device,access_mode::readwrite);
-        gpu_all_del_sets(neighnum.data,ns.data,ds.data,dother.data,Ncells,n_idx);
-        }
-    else
-        {
-        for (int ii = 0; ii < Ncells; ++ii)
-            getDelSets(ii);
-        };
     };
 
 /*!
@@ -947,10 +850,8 @@ void voronoiModelBase::resizeAndReset()
     repair.resize(Ncells);
 
     neighborNum.resize(Ncells);
-    NeighIdxs.resize(6*(Ncells));
 
     resetLists();
-    allDelSets();
     reinitialize(neighMax);
     };
 
