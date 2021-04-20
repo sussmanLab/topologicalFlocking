@@ -15,14 +15,11 @@ voronoiModelBase::voronoiModelBase(bool _gpu, bool _neverGPU) : Simple2DActiveCe
     //when the box area is of order N (i.e. on average one particle per bin)
     if(neverGPU)
         {
-        external_forces.noGPU=true;
-        exclusions.noGPU=true;
         NeighIdxs.noGPU=true;
         anyCircumcenterTestFailed.noGPU=true;
         repair.noGPU=true;
         delSets.noGPU=true;
         delOther.noGPU=true;
-        forceSets.noGPU=true;
         }
     };
 
@@ -47,10 +44,7 @@ void voronoiModelBase::initializeVoronoiModelBase(int n, int maxNeighGuess)
     repair.resize(Ncells);
     displacements.resize(Ncells);
 
-    external_forces.resize(Ncells);
     vector<int> baseEx(Ncells,0);
-    setExclusions(baseEx);
-    particleExclusions=false;
 
     //initialize spatial sorting, but do not sort by default
     initializeCellSorting();
@@ -72,30 +66,6 @@ void voronoiModelBase::initializeVoronoiModelBase(int n, int maxNeighGuess)
     anyCircumcenterTestFailed.resize(1);
     ArrayHandle<int> h_actf(anyCircumcenterTestFailed,access_location::host,access_mode::overwrite);
     h_actf.data[0]=0;
-    };
-
-/*!
-\param exes a list of per-particle indications of whether a particle should be excluded (exes[i] !=0) or not/
-*/
-void voronoiModelBase::setExclusions(vector<int> &exes)
-    {
-    particleExclusions=true;
-    external_forces.resize(Ncells);
-    exclusions.resize(Ncells);
-    ArrayHandle<double2> h_mot(Motility,access_location::host,access_mode::readwrite);
-    ArrayHandle<int> h_ex(exclusions,access_location::host,access_mode::overwrite);
-
-    for (int ii = 0; ii < Ncells; ++ii)
-        {
-        h_ex.data[ii] = 0;
-        if( exes[ii] != 0)
-            {
-            //set v0 to zero and Dr to zero
-            h_mot.data[ii].x = 0.0;
-            h_mot.data[ii].y = 0.0;
-            h_ex.data[ii] = 1;
-            };
-        };
     };
 
 /*!
@@ -368,9 +338,6 @@ void voronoiModelBase::spatialSorting()
     //get new DelSets and DelOthers
     resetLists();
     allDelSets();
-
-    //re-index all cell information arrays
-    reIndexCellArray(exclusions);
     };
 
 /*!
@@ -887,7 +854,7 @@ vector<double> voronoiModelBase::d2Hdridrj(double2 rj, double2 rk, int jj)
 
 /*!
 As the code is modified, all GPUArrays whose size depend on neighMax should be added to this function
-\post voroCur,voroLastNext, delSets, delOther, and forceSets grow to size neighMax*Ncells
+\post voroCur,voroLastNext, delSets, delOther, and grow to size neighMax*Ncells
 */
 void voronoiModelBase::resetLists()
     {
@@ -897,7 +864,6 @@ void voronoiModelBase::resetLists()
     voroLastNext.resize(neighMax*Ncells);
     delSets.resize(neighMax*Ncells);
     delOther.resize(neighMax*Ncells);
-    forceSets.resize(neighMax*Ncells);
     };
 
 /*!
@@ -978,8 +944,6 @@ void voronoiModelBase::resizeAndReset()
     //Simple resizing operations
     displacements.resize(Ncells);
     cellForces.resize(Ncells);
-    external_forces.resize(Ncells);
-    exclusions.resize(Ncells);
     repair.resize(Ncells);
 
     neighborNum.resize(Ncells);

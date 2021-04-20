@@ -1,11 +1,10 @@
 #include "DatabaseNetCDFSPV.h"
 /*! \file DatabaseNetCDFSPV.cpp */
 
-SPVDatabaseNetCDF::SPVDatabaseNetCDF(int np, string fn, NcFile::FileMode mode, bool exclude)
+SPVDatabaseNetCDF::SPVDatabaseNetCDF(int np, string fn, NcFile::FileMode mode)
     : BaseDatabaseNetCDF(fn,mode),
       Nv(np),
-      Current(0),
-      exclusions(exclude)
+      Current(0)
     {
     switch(Mode)
         {
@@ -41,8 +40,6 @@ void SPVDatabaseNetCDF::SetDimVar()
     typeVar          = File.add_var("type",         ncInt,recDim, NvDim );
     directorVar          = File.add_var("director",         ncDouble,recDim, NvDim );
     BoxMatrixVar    = File.add_var("BoxMatrix", ncDouble,recDim, boxDim);
-    if(exclusions)
-        exVar          = File.add_var("externalForce",       ncDouble,recDim, dofDim);
     }
 
 void SPVDatabaseNetCDF::GetDimVar()
@@ -60,8 +57,6 @@ void SPVDatabaseNetCDF::GetDimVar()
     means0Var          = File.get_var("means0");
     BoxMatrixVar    = File.get_var("BoxMatrix");
     timeVar    = File.get_var("time");
-    if(exclusions)
-        exVar = File.get_var("externalForce");
     }
 
 void SPVDatabaseNetCDF::WriteState(STATE s, double time, int rec)
@@ -86,7 +81,6 @@ void SPVDatabaseNetCDF::WriteState(STATE s, double time, int rec)
     ArrayHandle<double2> h_p(s->cellPositions,access_location::host,access_mode::read);
     ArrayHandle<double2> h_v(s->cellVelocities,access_location::host,access_mode::read);
     ArrayHandle<int> h_ct(s->cellType,access_location::host,access_mode::read);
-    ArrayHandle<int> h_ex(s->exclusions,access_location::host,access_mode::read);
 
     for (int ii = 0; ii < Nv; ++ii)
         {
@@ -96,10 +90,7 @@ void SPVDatabaseNetCDF::WriteState(STATE s, double time, int rec)
         posdat[(2*idx)] = px;
         posdat[(2*idx)+1] = py;
         directordat[ii] = atan2(h_v.data[pidx].y,h_v.data[pidx].x);
-        if(h_ex.data[ii] == 0)
             typedat[ii] = h_ct.data[pidx];
-        else
-            typedat[ii] = h_ct.data[pidx]-5;
         idx +=1;
         };
 //    means0 = means0/Nv;
@@ -112,22 +103,6 @@ void SPVDatabaseNetCDF::WriteState(STATE s, double time, int rec)
     typeVar       ->put_rec(&typedat[0],      rec);
     directorVar       ->put_rec(&directordat[0],      rec);
     BoxMatrixVar->put_rec(&boxdat[0],     rec);
-    if(exclusions)
-        {
-        ArrayHandle<double2> h_ef(s->external_forces,access_location::host,access_mode::read);
-        std::vector<double> exdat(2*Nv);
-        int id = 0;
-        for (int ii = 0; ii < Nv; ++ii)
-            {
-            int pidx = s->tagToIdx[ii];
-            double px = h_ef.data[pidx].x;
-            double py = h_ef.data[pidx].y;
-            exdat[(2*id)] = px;
-            exdat[(2*id)+1] = py;
-            id +=1;
-            };
-        exVar      ->put_rec(&exdat[0],     rec);
-        };
 
     File.sync();
     }
@@ -135,10 +110,7 @@ void SPVDatabaseNetCDF::WriteState(STATE s, double time, int rec)
 void SPVDatabaseNetCDF::ReadState(STATE t, int rec,bool geometry)
     {
     //initialize the NetCDF dimensions and variables
-    //test if there is exclusion data to read...
     int tester = File.num_vars();
-    if (tester == 7)
-        exclusions = true;
     GetDimVar();
 
     //get the current time
@@ -181,24 +153,6 @@ void SPVDatabaseNetCDF::ReadState(STATE t, int rec,bool geometry)
         h_cd.data[idx]=cddata[idx];;
         h_ct.data[idx]=ctdata[idx];;
         };
-
-    //read in excluded forces if applicable...
-    if (tester == 7)
-        {
-        exVar-> set_cur(rec);
-        std::vector<double> efdata(2*Nv,0.0);
-        exVar->get(&posdata[0],1, dofDim->size());
-        ArrayHandle<double2> h_ef(t->external_forces,access_location::host,access_mode::overwrite);
-        for (int idx = 0; idx < Nv; ++idx)
-            {
-            double efx = efdata[(2*idx)];
-            double efy = efdata[(2*idx)+1];
-            h_ef.data[idx].x=efx;
-            h_ef.data[idx].y=efy;
-            };
-        };
-
-
     //by default, compute the triangulation and geometrical information
     if(geometry)
         {

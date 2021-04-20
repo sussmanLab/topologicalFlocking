@@ -23,7 +23,7 @@ private:
 
 
 public:
-    SPVDatabaseNetCDF(int np, string fn="temp.nc", NcFile::FileMode mode=NcFile::ReadOnly,bool excluded = false);
+    SPVDatabaseNetCDF(int np, string fn="temp.nc", NcFile::FileMode mode=NcFile::ReadOnly);
     ~SPVDatabaseNetCDF(){File.close();};
 
 protected:

@@ -46,9 +46,6 @@ class voronoiModelBase : public Simple2DActiveCell
         //!update/enforce the topology
         virtual void enforceTopology();
 
-        //!Declare which particles are to be excluded (exes[i]!=0)
-        void setExclusions(vector<int> &exes);
-
         //virtual functions that need to be implemented
         //!In voronoi models the number of degrees of freedom is the number of cells
         virtual int getNumberOfDegreesOfFreedom(){return Ncells;};
@@ -132,10 +129,6 @@ class voronoiModelBase : public Simple2DActiveCell
         int skippedFrames;
         //!How often were global re-triangulations performed?
         int GlobalFixes;
-        //!"exclusions" zero out the force on a cell...the external force needed to do this is stored in external_forces
-        GPUArray<double2> external_forces;
-        //!An array containing the indices of excluded particles
-        GPUArray<int> exclusions;
 
     protected:
         //!The size of the cell list's underlying grid
@@ -170,8 +163,6 @@ class voronoiModelBase : public Simple2DActiveCell
         bool globalOnly;
         //!Count the number of times that testAndRepair has been called, separately from the derived class' time
         int timestep;
-        //!A flag that notifies the existence of any particle exclusions (for which the net force is set to zero by fictitious external forces)
-        bool particleExclusions;
 
         //!delSet.data[n_idx(nn,i)] are the previous and next consecutive delaunay neighbors
         /*! These are orientationally ordered, of point i (for use in computing forces on GPU)
@@ -183,8 +174,6 @@ class voronoiModelBase : public Simple2DActiveCell
         */
         GPUArray<int> delOther;
 
-        //!In GPU mode, interactions are computed "per voronoi vertex"...forceSets are summed up to get total force on a particle
-        GPUArray<double2> forceSets;
     //be friends with the associated Database class so it can access data to store or read
     friend class SPVDatabaseNetCDF;
     };
