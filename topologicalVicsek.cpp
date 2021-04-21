@@ -56,8 +56,8 @@ int main(int argc, char*argv[])
         };
 
     char dataname[256];
-    //sprintf(dataname,"../data/test.nc");
-    //SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace,false);
+    sprintf(dataname,"../data/test.nc");
+    SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace);
 
     profiler prof("voroVicsek initial ");
     profiler prof2("voroVicsek late stage");
