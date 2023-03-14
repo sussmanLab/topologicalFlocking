@@ -106,22 +106,33 @@ void xyLikeScalarVicsekModel::integrateEquationsOfMotionCPU()
     ArrayHandle<int> nNeighs(activeModel->neighborNum);
     for (int ii = 0; ii < Ndof; ++ii)
         {
-        //average direction of neighbors?
         int m = nNeighs.data[ii];
-        newVel.data[ii] = vel.data[ii];
+        double thetaUpdate = 0;
+        double thetaI = atan2(vel.data[ii].y,vel.data[ii].x);
         for (int jj=0; jj < m; ++jj)
             {
-            newVel.data[ii] = newVel.data[ii] + vel.data[neighs.data[activeModel->n_idx(jj,ii)]];
+            int neighIdx = neighs.data[activeModel->n_idx(jj,ii)];
+            double thetaJ = atan2(vel.data[neighIdx].y,vel.data[neighIdx].x);
+            thetaUpdate += sin(thetaJ-thetaI);
             }
-        m +=1; //account for self-alignment
+        if(reciprocalNormalization > 0) //reciprocal model: divide by a constant
+            {
+            thetaUpdate = thetaUpdate / reciprocalNormalization;
+            }
+        else // non-reciprocal model: divide by neighbor number
+            {
+            if (m > 0)
+                thetaUpdate = thetaUpdate / ((double) m);
+            }
 
-        //normalize and rotate new director
-        double u = noise.getRealUniform(-.5,.5);
-        double theta = 2.0*PI*u*eta;
-        newVel.data[ii] = (1./norm(newVel.data[ii])) * newVel.data[ii];
-        rotate2D(newVel.data[ii],theta);
+        //add a little noise
+        thetaUpdate += 2.0*PI*eta*noise.getRealUniform(-.5,.5);
+
+        //rotate new director
+        newVel.data[ii] = vel.data[ii];
+        rotate2D(newVel.data[ii],thetaUpdate);
         }
-    //update and normalize
+    //update all velocities
     for (int ii = 0; ii < Ndof; ++ii)
         {
         vel.data[ii] = newVel.data[ii];

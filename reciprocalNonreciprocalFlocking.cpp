@@ -21,9 +21,9 @@ int main(int argc, char*argv[])
     //...some default parameters
     int numpts = 200; //number of cells
     int USE_GPU = 0; //0 or greater uses a gpu, any negative number runs on the cpu
-    int tSteps = 5; //number of time steps to run after initialization
-    int initSteps = 1; //number of initialization steps
-    int oneRingSize = 32;//estimate of max number of voro neighbors...for now, best to set this deliberately high
+    int tSteps = 500; //number of time steps to run after initialization
+    int initSteps = 100; //number of initialization steps
+    int oneRingSize = 64;//estimate of max number of voro neighbors...for now, best to set this deliberately high
 
     double dt = 1.0; //the time step size
     double v0 = 0.1;  // the self-propulsion

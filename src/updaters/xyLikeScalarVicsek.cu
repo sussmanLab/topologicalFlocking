@@ -17,18 +17,35 @@ __global__ void xyLike_scalar_vicsek_directors_kernel(double2 *velocities,
     if (idx >=N)
         return;
     int m = nNeighbors[idx];
-    newVelocities[idx] = velocities[idx];
+    double thetaUpdate = 0.0;
+    double thetaI = atan2(velocities[idx].y,velocities[idx].x);
+    double thetaJ=0.;
     for (int jj = 0; jj < m; ++jj)
-        newVelocities[idx] = newVelocities[idx]+ velocities[neighbors[n_idx(jj,idx)]];
+        {
+        int neighIdx = neighbors[n_idx(jj,idx)];
+        thetaJ = atan2(velocities[neighIdx].y,velocities[neighIdx].x);
+        thetaUpdate += sin(thetaJ-thetaI);
+        }
+
+    if(reciprocalNormalization > 0) //reciprocal model: divide by a constant
+        {
+        thetaUpdate = thetaUpdate / reciprocalNormalization;
+        }
+    else // non-reciprocal model: divide by neighbor number
+        {
+        if (m > 0)
+            thetaUpdate = thetaUpdate / ((double) m);
+        }
+
+    curandState_t randState;
+    randState=RNGs[idx];//checkout the relevant RNG
+    double u = curand_uniform_double(&randState) -0.5;//uniform between -.5 and .5
+    RNGs[idx] = randState; //put it back
+    thetaUpdate += 2.0*PI*eta*u;
 
     //normalize and rotate by noise
-    newVelocities[idx] = (1./norm(newVelocities[idx]))* newVelocities[idx];
-    curandState_t randState;
-    randState=RNGs[idx];
-    double u = curand_uniform_double(&randState) -0.5;//uniform between -.5 and .5
-    RNGs[idx] = randState;
-    double theta = 2.0*PI*u*eta;
-    rotate2D(newVelocities[idx],theta);
+    newVelocities[idx] = velocities[idx];
+    rotate2D(newVelocities[idx],thetaUpdate);
     }
 bool gpu_xyLike_scalar_vicsek_directors(
                     double2 *velocities,
