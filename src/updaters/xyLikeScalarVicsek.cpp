@@ -1,0 +1,176 @@
+#include "xyLikeScalarVicsek.h"
+#include "xyLikeScalarVicsek.cuh"
+#include "scalarVicsekModel.cuh"
+#include "functions.h"
+
+
+xyLikeScalarVicsekModel::xyLikeScalarVicsekModel(int _N,double _eta, double _mu, double _deltaT, double _reciprocalNormalization, bool _gpu, bool _neverGPU) : simpleEquationOfMotion(_gpu,_neverGPU)
+    {
+    Timestep = 0;
+    deltaT = _deltaT;
+    mu = _mu;
+    eta = _eta;
+    GPUcompute = true;
+    Ndof = _N;
+    if(neverGPU)
+        {
+        newVelocityDirector.noGPU=true;
+        };
+    noise.initialize(Ndof);
+    if(!neverGPU)
+        noise.initializeGPURNGs();
+    displacements.resize(Ndof);
+    newVelocityDirector.resize(Ndof);
+    reciprocalNormalization = _reciprocalNormalization;
+    if(reciprocalNormalization < 0)
+        {
+        reciprocalModel = false;
+        printf("setting an XY-like scalar vicsek model with nonreciprocal neighbor-number normalization\n");
+        }
+    else
+        {
+        reciprocalModel = true;
+        printf("setting an XY-like scalar vicsek model with reciprocal normalization n_i(t) = %f \n",reciprocalNormalization);
+        }
+    };
+
+/*!
+Set the shared pointer of the base class to passed variable; cast it as an active cell model
+Additionally, convert the current value of the cell directors into a vector quantity, stored in the cell velocities as a unit vector
+*/
+void xyLikeScalarVicsekModel::set2DModel(shared_ptr<Simple2DModel> _model)
+    {
+    model=_model;
+    activeModel = dynamic_pointer_cast<Simple2DActiveCell>(model);
+    ArrayHandle<double> h_n(activeModel->cellDirectors);
+    ArrayHandle<double2> h_v(activeModel->cellVelocities);
+    for (int ii = 0; ii < Ndof; ++ii)
+        {
+        h_n.data[ii] = noise.getRealUniform(0.,2.*PI);
+        h_v.data[ii].x = cos(h_n.data[ii]);
+        h_v.data[ii].y = sin(h_n.data[ii]);
+        }
+    }
+
+/*!
+Advances self-propelled dynamics with random noise in the director by one time step
+*/
+void xyLikeScalarVicsekModel::integrateEquationsOfMotion()
+    {
+    Timestep += 1;
+    if (activeModel->getNumberOfDegreesOfFreedom() != Ndof)
+        {
+        Ndof = activeModel->getNumberOfDegreesOfFreedom();
+        displacements.resize(Ndof);
+        noise.initialize(Ndof);
+        newVelocityDirector.resize(Ndof);
+        };
+    if(GPUcompute)
+        {
+        integrateEquationsOfMotionGPU();
+        }
+    else
+        {
+        integrateEquationsOfMotionCPU();
+        }
+    }
+
+/*!
+The straightforward CPU implementation
+*/
+void xyLikeScalarVicsekModel::integrateEquationsOfMotionCPU()
+    {
+    //first, compute forces and move particles in the correct direction
+    activeModel->computeForces(); //if connected to voronoiModelBase this will do nothing...
+
+    {//scope for array Handles
+    ArrayHandle<double2> h_f(activeModel->returnForces(),access_location::host,access_mode::read);
+    ArrayHandle<double2> h_v(activeModel->cellVelocities);
+    ArrayHandle<double2> h_disp(displacements,access_location::host,access_mode::overwrite);
+    ArrayHandle<double2> h_motility(activeModel->Motility,access_location::host,access_mode::read);
+
+    for(int ii = 0; ii<Ndof; ++ii)
+        {
+        double v0i = h_motility.data[ii].x;
+        h_disp.data[ii] = deltaT*(v0i*h_v.data[ii] + mu*h_f.data[ii]);
+        }
+    }
+    activeModel->moveDegreesOfFreedom(displacements);
+    activeModel->enforceTopology();
+
+    //update directors
+    {//ArrayHandle scope
+    ArrayHandle<double2> vel(activeModel->cellVelocities);
+    ArrayHandle<double2> newVel(newVelocityDirector);
+    ArrayHandle<int> neighs(activeModel->neighbors);
+    ArrayHandle<int> nNeighs(activeModel->neighborNum);
+    for (int ii = 0; ii < Ndof; ++ii)
+        {
+        //average direction of neighbors?
+        int m = nNeighs.data[ii];
+        newVel.data[ii] = vel.data[ii];
+        for (int jj=0; jj < m; ++jj)
+            {
+            newVel.data[ii] = newVel.data[ii] + vel.data[neighs.data[activeModel->n_idx(jj,ii)]];
+            }
+        m +=1; //account for self-alignment
+
+        //normalize and rotate new director
+        double u = noise.getRealUniform(-.5,.5);
+        double theta = 2.0*PI*u*eta;
+        newVel.data[ii] = (1./norm(newVel.data[ii])) * newVel.data[ii];
+        rotate2D(newVel.data[ii],theta);
+        }
+    //update and normalize
+    for (int ii = 0; ii < Ndof; ++ii)
+        {
+        vel.data[ii] = newVel.data[ii];
+        }
+    }//ArrayHandle scope
+    };
+
+/*!
+The straightforward GPU implementation
+*/
+void xyLikeScalarVicsekModel::integrateEquationsOfMotionGPU()
+    {
+    //first stage: update positions
+    activeModel->computeForces();
+    {//scope for array handles
+    ArrayHandle<double2> d_f(activeModel->returnForces(),access_location::device,access_mode::read);
+    ArrayHandle<double2> d_v(activeModel->cellVelocities,access_location::device,access_mode::read);
+    ArrayHandle<double2> d_disp(displacements,access_location::device,access_mode::overwrite);
+    ArrayHandle<double2> d_motility(activeModel->Motility,access_location::device,access_mode::read);
+    gpu_scalar_vicsek_update(d_f.data,
+                             d_v.data,
+                             d_disp.data,
+                             d_motility.data,
+                             Ndof,
+                             deltaT,
+                             mu);
+    }
+    activeModel->moveDegreesOfFreedom(displacements);
+    activeModel->enforceTopology();
+
+    //second stage: update directors
+    {//scope for array handles
+    ArrayHandle<double2> d_v(activeModel->cellVelocities,access_location::device,access_mode::readwrite);
+    ArrayHandle<double2> d_newV(newVelocityDirector,access_location::device,access_mode::overwrite);
+    ArrayHandle<int> neighs(activeModel->neighbors,access_location::device,access_mode::read);
+    ArrayHandle<int> nNeighs(activeModel->neighborNum,access_location::device,access_mode::read);
+    ArrayHandle<curandState> d_RNG(noise.RNGs,access_location::device,access_mode::readwrite);
+
+    gpu_xyLike_scalar_vicsek_directors(d_v.data,
+                                d_newV.data,
+                                nNeighs.data,
+                                neighs.data,
+                                reciprocalNormalization,
+                                activeModel->n_idx,
+                                d_RNG.data,
+                                Ndof,
+                                eta);
+    }
+    //swap velocity and newVelocity data
+    activeModel->cellVelocities.swap(newVelocityDirector);
+    };
+

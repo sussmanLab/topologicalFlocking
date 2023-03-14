@@ -25,6 +25,7 @@ add_library(updaters
     setTotalLinearMomentum.cpp
     scalarVicsekModel.cpp
     vectorVicsekModel.cpp
+    xyLikeScalarVicsek.cpp
     )
 cuda_add_library(updatersGPU
     EnergyMinimizerFIRE2D.cu
@@ -36,5 +37,6 @@ cuda_add_library(updatersGPU
     simpleEquationOfMotion.cu
     scalarVicsekModel.cu
     vectorVicsekModel.cu
+    xyLikeScalarVicsek.cu
     )
 
