@@ -113,7 +113,7 @@ void xyLikeScalarVicsekModel::integrateEquationsOfMotionCPU()
             {
             int neighIdx = neighs.data[activeModel->n_idx(jj,ii)];
             double thetaJ = atan2(vel.data[neighIdx].y,vel.data[neighIdx].x);
-            thetaUpdate += sin(thetaJ-thetaI);
+            thetaUpdate += deltaT*sin(thetaJ-thetaI);
             }
         if(reciprocalNormalization > 0) //reciprocal model: divide by a constant
             {
@@ -126,7 +126,7 @@ void xyLikeScalarVicsekModel::integrateEquationsOfMotionCPU()
             }
 
         //add a little noise
-        thetaUpdate += 2.0*PI*eta*noise.getRealUniform(-.5,.5);
+        thetaUpdate += sqrt(deltaT)*2.0*PI*eta*noise.getRealUniform(-.5,.5);
 
         //rotate new director
         newVel.data[ii] = vel.data[ii];
@@ -179,7 +179,8 @@ void xyLikeScalarVicsekModel::integrateEquationsOfMotionGPU()
                                 activeModel->n_idx,
                                 d_RNG.data,
                                 Ndof,
-                                eta);
+                                eta,
+                                deltaT);
     }
     //swap velocity and newVelocity data
     activeModel->cellVelocities.swap(newVelocityDirector);

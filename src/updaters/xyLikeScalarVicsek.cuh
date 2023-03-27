@@ -14,5 +14,6 @@ bool gpu_xyLike_scalar_vicsek_directors(
                     Index2D  &n_idx,
                     curandState *RNGs,
                     int N,
-                    double eta);
+                    double eta,
+                    double deltaT);
  #endif

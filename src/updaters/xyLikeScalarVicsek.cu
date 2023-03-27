@@ -11,7 +11,8 @@ __global__ void xyLike_scalar_vicsek_directors_kernel(double2 *velocities,
                                                Index2D n_idx,
                                                curandState *RNGs,
                                                int N,
-                                               double eta)
+                                               double eta,
+                                               double deltaT)
     {
     unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
     if (idx >=N)
@@ -24,7 +25,7 @@ __global__ void xyLike_scalar_vicsek_directors_kernel(double2 *velocities,
         {
         int neighIdx = neighbors[n_idx(jj,idx)];
         thetaJ = atan2(velocities[neighIdx].y,velocities[neighIdx].x);
-        thetaUpdate += sin(thetaJ-thetaI);
+        thetaUpdate += deltaT*sin(thetaJ-thetaI);
         }
 
     if(reciprocalNormalization > 0) //reciprocal model: divide by a constant
@@ -41,7 +42,7 @@ __global__ void xyLike_scalar_vicsek_directors_kernel(double2 *velocities,
     randState=RNGs[idx];//checkout the relevant RNG
     double u = curand_uniform_double(&randState) -0.5;//uniform between -.5 and .5
     RNGs[idx] = randState; //put it back
-    thetaUpdate += 2.0*PI*eta*u;
+    thetaUpdate += sqrt(deltaT)*2.0*PI*eta*u;
 
     //normalize and rotate by noise
     newVelocities[idx] = velocities[idx];
@@ -56,13 +57,14 @@ bool gpu_xyLike_scalar_vicsek_directors(
                     Index2D  &n_idx,
                     curandState *RNGs,
                     int N,
-                    double eta)
+                    double eta,
+                    double deltaT)
     {
     unsigned int block_size = 128;
     if (N < 128) block_size = 32;
     unsigned int nblocks  = N/block_size + 1;
 
-    xyLike_scalar_vicsek_directors_kernel<<<nblocks,block_size>>>(velocities,newVelocities,nNeighbors,neighbors,reciprocalNormalization,n_idx,RNGs,N,eta);
+    xyLike_scalar_vicsek_directors_kernel<<<nblocks,block_size>>>(velocities,newVelocities,nNeighbors,neighbors,reciprocalNormalization,n_idx,RNGs,N,eta,deltaT);
 
     HANDLE_ERROR(cudaGetLastError());
     return cudaSuccess;
