@@ -20,5 +20,6 @@ add_library(database
     DatabaseNetCDFSPV.cpp
     DatabaseTextVoronoi.cpp
     vectorValueDatabase.cpp
+    vicsekDatabase.cpp
     )
 

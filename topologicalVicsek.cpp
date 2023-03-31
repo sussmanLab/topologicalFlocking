@@ -7,7 +7,7 @@
 #include "voronoiModelBase.h"
 #include "scalarVicsekModel.h"
 #include "vectorVicsekModel.h"
-#include "DatabaseNetCDFSPV.h"
+#include "vicsekDatabase.h"
 
 /*!
  * This file is a simple implementation of either the scalar or vectorial vicsek model,
@@ -57,7 +57,7 @@ int main(int argc, char*argv[])
 
     char dataname[256];
     sprintf(dataname,"../data/test.nc");
-    SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace);
+    vicsekDatabase ncdat(numpts,dataname,NcFile::Replace);
 
     profiler prof("voroVicsek initial ");
     profiler prof2("voroVicsek late stage");
@@ -124,5 +124,6 @@ int main(int argc, char*argv[])
 
     prof.print();
     prof2.print();
+            ncdat.WriteState(model);
     return 0;
 };

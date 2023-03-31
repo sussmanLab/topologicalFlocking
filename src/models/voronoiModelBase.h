@@ -160,6 +160,7 @@ class voronoiModelBase : public Simple2DActiveCell
 
     //be friends with the associated Database class so it can access data to store or read
     friend class SPVDatabaseNetCDF;
+    friend class vicsekDatabase;
     };
 
 #endif
