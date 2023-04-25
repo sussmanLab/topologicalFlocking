@@ -125,4 +125,11 @@ bool gpu_dVec_dot_products(
                     int N,
                     int block_size);
 /** @} */ //end of group declaration
+
+//!fill dVec from double2 array on either CPU or GPU
+bool filldVecFromDouble2(GPUArray<dVec> &copyInto,
+                       GPUArray<double2> &copyFrom,
+                       int numberOfElementsToCopy,
+                       bool useGPU,
+                       int block_size=512);
 #endif

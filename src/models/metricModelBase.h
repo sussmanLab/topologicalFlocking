@@ -2,9 +2,9 @@
 #define metricModelBase_H
 
 #include "Simple2DActiveCell.h"
-#include "cellListGPU.cuh"
-#include "cellListGPU.h"
 #include "structures.h"
+#include "neighborList.h"
+
 
 
 /*! \file metricModelBase.h */
@@ -17,7 +17,7 @@ class metricModelBase : public Simple2DActiveCell
         //!The constructor!
         metricModelBase(bool _gpu = true, bool _neverGPU=false);
         //!A default initialization scheme
-        void initializemetricModelBase(int n);
+        void initializeMetricModelBase(int n);
         //!Enforce CPU-only operation.
         /*!
         \param global defaults to true.
@@ -49,6 +49,9 @@ class metricModelBase : public Simple2DActiveCell
         //set number of threads
         virtual void setOmpThreads(int _number){ompThreadNum = _number;};
 
+        shared_ptr<neighborList> neighStructure;
+        shared_ptr<periodicBoundaryConditions> PBC;
+
     //protected functions
     protected:
         //!sort points along a Hilbert curve for data locality
@@ -60,6 +63,7 @@ class metricModelBase : public Simple2DActiveCell
         void resizeAndReset();
 
     protected:
+        GPUArray<dVec> dVecPos;
         //!The size of the cell list's underlying grid
         double cellsize;
         //!An upper bound for the maximum number of neighbors that any cell has

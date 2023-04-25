@@ -4,6 +4,7 @@
 #include "std_include.h"
 #include <cuda_runtime.h>
 #include "indexer.h"
+#include "dIndexer.h"
 #include "periodicBoundaryConditions.h"
 
 /*! \file neighborList.cuh
@@ -15,7 +16,7 @@
  */
 
 bool gpu_compute_neighbor_list(int *d_idx,
-                               unsigned int *d_npp,
+                               int *d_npp,
                                dVec *d_vec,
                                unsigned int *particlesPerCell,
                                int *indices,
@@ -32,7 +33,7 @@ bool gpu_compute_neighbor_list(int *d_idx,
                                iVec gridCellsPerSide,
                                dVec gridCellSizes,
                                int cellListNmax,
-                               scalar maxRange,
+                               double maxRange,
                                int nmax,
                                int Np,
                                int maxBlockSize = 64,

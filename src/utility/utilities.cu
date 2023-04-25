@@ -757,6 +757,50 @@ bool gpu_zero_array(int *arr,
     return cudaSuccess;
     }
 
+__global__ void filldVecFromDouble2_kernel(dVec *copyInto,double2 *copyFrom, int N)
+    {
+    // read in the particle that belongs to this thread
+    unsigned int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    if (idx >= N)
+        return;
+    copyInto[idx].x[0] = copyFrom[idx].x;
+    copyInto[idx].x[1] = copyFrom[idx].y;
+    return;
+    };
+
+
+bool filldVecFromDouble2(GPUArray<dVec> &copyInto,
+                       GPUArray<double2> &copyFrom,
+                       int numberOfElementsToCopy,
+                       bool useGPU,
+                       int block_size)
+    {
+    int bs = block_size;
+    if (numberOfElementsToCopy < 128) bs = 16;
+    unsigned int nblocks  = numberOfElementsToCopy/bs + 1;
+
+    if(useGPU)
+        {
+        ArrayHandle<dVec> ci(copyInto,access_location::device,access_mode::overwrite);
+        ArrayHandle<double2> cf(copyFrom,access_location::device,access_mode::read);
+        filldVecFromDouble2_kernel<<<nblocks,bs>>>(ci.data,cf.data,numberOfElementsToCopy);
+        HANDLE_ERROR(cudaGetLastError());
+        return cudaSuccess;
+        }
+    else
+        {
+        ArrayHandle<dVec> ci(copyInto,access_location::host,access_mode::overwrite);
+        ArrayHandle<double2> cf(copyFrom,access_location::host,access_mode::read);
+        for(int ii = 0; ii < numberOfElementsToCopy; ++ii)
+            {
+            ci.data[ii].x[0] = cf.data[ii].x;
+            ci.data[ii].x[1] = cf.data[ii].y;
+            };
+        }
+    return true;
+    }
+
+
 /*!
 takes the dot product of every element of the two input arrays and performs a reduction on the sum
 \param intermediate an array that input is block-reduced to

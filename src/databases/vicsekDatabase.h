@@ -7,7 +7,7 @@
 class vicsekDatabase : public BaseDatabaseNetCDF
 {
 private:
-    typedef shared_ptr<voronoiModelBase> STATE;
+    typedef shared_ptr<Simple2DActiveCell> STATE;
     int Nv; //!< number of vertices in delaunay triangulation
     NcDim *recDim, *NvDim, *dofDim, *boxDim, *unitDim; //!< NcDims we'll use
     NcVar *positionVar, *velocityVar, *neighborVar, *typeVar, *directorVar, *BoxMatrixVar, *timeVar; //!<NcVars we'll use

@@ -1,5 +1,7 @@
 #include "cuda_runtime.h"
 #include "metricModelBase.h"
+#include "utilities.cuh"
+
 
 /*! \file metricModelBase.cpp */
 
@@ -18,14 +20,15 @@ metricModelBase::metricModelBase(bool _gpu, bool _neverGPU) : Simple2DActiveCell
  * a function that takes care of the initialization of the class.
  * \param n the number of cells to initialize
  */
-void metricModelBase::initializemetricModelBase(int n)
+void metricModelBase::initializeMetricModelBase(int n)
     {
     //set particle number and call initializers
     Ncells = n;
     initializeSimple2DActiveCell(Ncells);
-
+DEBUGCODEHELPER;
     displacements.resize(Ncells);
 
+    dVecPos.resize(Ncells);
     vector<int> baseEx(Ncells,0);
 
     //initialize spatial sorting, but do not sort by default
@@ -33,6 +36,12 @@ void metricModelBase::initializemetricModelBase(int n)
 
 
     //set neighbor lists
+    double xx,xy,yx,yy;
+    Box->getBoxDims(xx,xy,yx,yy);
+    PBC = make_shared<periodicBoundaryConditions>(xx);
+    neighStructure = make_shared<neighborList>(1.0, PBC);
+    neighStructure->setGPU(GPUcompute);
+    neighStructure->saveDistanceData = false;
     updateNeighborList();
 
     //make a full triangulation
@@ -111,6 +120,15 @@ void metricModelBase::moveDegreesOfFreedom(GPUArray<double2> &displacements,doub
 
 void metricModelBase::updateNeighborList()
     {
+    filldVecFromDouble2(dVecPos,cellPositions,Ncells,GPUcompute);
+    neighStructure->computeNeighborLists(dVecPos);
+    n_idx  =neighStructure->neighborIndexer;
+    neighbors.swap(neighStructure->particleIndices);
+    neighborNum.swap(neighStructure->neighborsPerParticle);
+    if(GPUcompute)
+        neighStructure->resetNeighborsGPU(Ncells,neighStructure->Nmax);
+    else
+        neighStructure->resetNeighborsCPU(Ncells,neighStructure->Nmax);
     };
 
 /*!

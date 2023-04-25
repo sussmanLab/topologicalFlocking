@@ -11,7 +11,7 @@
   (i.e, # threads = N_cells*adjacentCellsPerCell
 */
 __global__ void gpu_compute_neighbor_list_TPP_kernel(int *d_idx,
-                               unsigned int *d_npp,
+                               int *d_npp,
                                dVec *d_vec,
                                unsigned int *particlesPerCell,
                                int *indices,
@@ -28,7 +28,7 @@ __global__ void gpu_compute_neighbor_list_TPP_kernel(int *d_idx,
                                iVec gridCellsPerSide,
                                dVec gridCellSizes,
                                int cellListNmax,
-                               scalar maxRange,
+                               double maxRange,
                                int nmax,
                                int Np,
                                int threadsPerParticle)
@@ -104,7 +104,7 @@ __global__ void gpu_compute_neighbor_list_TPP_kernel(int *d_idx,
   (i.e, # threads = N_cells*adjacentCellsPerCell
 */
 __global__ void gpu_compute_neighbor_list_TPC_kernel(int *d_idx,
-                               unsigned int *d_npp,
+                               int *d_npp,
                                dVec *d_vec,
                                unsigned int *particlesPerCell,
                                int *indices,
@@ -120,7 +120,7 @@ __global__ void gpu_compute_neighbor_list_TPC_kernel(int *d_idx,
                                int adjacentCellsPerCell,
                                iVec gridCellsPerSide,
                                dVec gridCellSizes,
-                               scalar maxRange2,
+                               double maxRange2,
                                int nmax,
                                int Np)
     {
@@ -169,7 +169,7 @@ __global__ void gpu_compute_neighbor_list_TPC_kernel(int *d_idx,
 compute a neighbor list with one thread per particle
 */
 __global__ void gpu_compute_neighbor_list_kernel(int *d_idx,
-                               unsigned int *d_npp,
+                               int *d_npp,
                                dVec *d_vec,
                                unsigned int *particlesPerCell,
                                int *indices,
@@ -184,7 +184,7 @@ __global__ void gpu_compute_neighbor_list_kernel(int *d_idx,
                                int adjacentCellsPerCell,
                                iVec gridCellsPerSide,
                                dVec gridCellSizes,
-                               scalar maxRange2,
+                               double maxRange2,
                                int nmax,
                                int Np)
     {
@@ -233,7 +233,7 @@ __global__ void gpu_compute_neighbor_list_kernel(int *d_idx,
   compute neighbor list, one particle per thread
 */
 bool gpu_compute_neighbor_list(int *d_idx,
-                               unsigned int *d_npp,
+                               int *d_npp,
                                dVec *d_vec,
                                unsigned int *particlesPerCell,
                                int *indices,
@@ -250,7 +250,7 @@ bool gpu_compute_neighbor_list(int *d_idx,
                                iVec gridCellsPerSide,
                                dVec gridCellSizes,
                                int cellListNmax,
-                               scalar maxRange,
+                               double maxRange,
                                int nmax,
                                int Np,
                                int maxBlockSize,

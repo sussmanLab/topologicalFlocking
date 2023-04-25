@@ -21,12 +21,12 @@ add_library(utility
     hilbert_curve.cpp
     noiseSource.cpp
     hyperrectangularCellList.cpp
-#    neighborList.cpp
+    neighborList.cpp
     )
 cuda_add_library(utilityGPU
     cellListGPU.cu
     noiseSource.cu
     utilities.cu
     hyperrectangularCellList.cu
-#    neighborList.cu
+    neighborList.cu
     )

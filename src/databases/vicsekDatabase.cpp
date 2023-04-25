@@ -163,12 +163,13 @@ void vicsekDatabase::ReadState(STATE t, int rec,bool geometry)
     //by default, compute the triangulation and geometrical information
     if(geometry)
         {
-        t->globalTriangulationCGAL();
-        t->resetLists();
-        if(t->GPUcompute)
-            t->computeGeometryGPU();
-        else
-            t->computeGeometryCPU();
+        UNWRITTENCODE("AAAAAAAAAH");
+//        t->globalTriangulationCGAL();
+//        t->resetLists();
+//        if(t->GPUcompute)
+//            t->computeGeometryGPU();
+//        else
+//            t->computeGeometryCPU();
         };
     }
 

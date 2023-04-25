@@ -3,12 +3,12 @@
 #include "neighborList.cuh"
 /*! \file neighborList.cpp */
 
-neighborList::neighborList(scalar range, BoxPtr _box, int subGridReduction)
+neighborList::neighborList(double range, BoxPtr _box, int subGridReduction)
     {
     useGPU = false;
     saveDistanceData = true;
     Box = _box;
-    scalar gridScale = 1./(scalar)subGridReduction;
+    double gridScale = 1./(double)subGridReduction;
     int width = subGridReduction;
     cellList = make_shared<hyperrectangularCellList>(range*gridScale,Box);
     cellList->computeAdjacentCells(width);
@@ -20,7 +20,7 @@ void neighborList::resetNeighborsGPU(int size,int _nmax)
     {
     if(neighborsPerParticle.getNumElements() != size)
         neighborsPerParticle.resize(size);
-    ArrayHandle<unsigned int> d_npp(neighborsPerParticle,access_location::device,access_mode::overwrite);
+    ArrayHandle<int> d_npp(neighborsPerParticle,access_location::device,access_mode::overwrite);
     gpu_zero_array(d_npp.data,size);
 
     Nmax = _nmax;
@@ -46,7 +46,7 @@ void neighborList::resetNeighborsCPU(int size, int _nmax)
     {
     if(neighborsPerParticle.getNumElements() != size)
         neighborsPerParticle.resize(size);
-    ArrayHandle<unsigned int> h_npp(neighborsPerParticle,access_location::host,access_mode::overwrite);
+    ArrayHandle<int> h_npp(neighborsPerParticle,access_location::host,access_mode::overwrite);
     for (int i = 0; i < size; ++i)
         h_npp.data[i] = 0;
 
@@ -64,7 +64,7 @@ void neighborList::resetNeighborsCPU(int size, int _nmax)
 
     ArrayHandle<int> h_idx(particleIndices,access_location::host,access_mode::overwrite);
     ArrayHandle<dVec> h_vec(neighborVectors,access_location::host,access_mode::overwrite);
-        ArrayHandle<scalar> h_dist(neighborDistances,access_location::host,access_mode::overwrite);
+        ArrayHandle<double> h_dist(neighborDistances,access_location::host,access_mode::overwrite);
     for (int i = 0; i < neighborIndexer.getNumElements(); ++i)
         {
         h_idx.data[i]=0;
@@ -103,10 +103,10 @@ void neighborList::computeCPU(GPUArray<dVec> &points)
         {
         computations += 1;
         resetNeighborsCPU(Np,nmax);
-        ArrayHandle<unsigned int> h_npp(neighborsPerParticle);
+        ArrayHandle<int> h_npp(neighborsPerParticle);
         ArrayHandle<int> h_idx(particleIndices);
         ArrayHandle<dVec> h_vec(neighborVectors);
-        ArrayHandle<scalar> h_dist(neighborDistances);
+        ArrayHandle<double> h_dist(neighborDistances);
         ArrayHandle<int> h_adj(cellList->returnAdjacentCells());
         recompute = false;
         vector<int> cellsToScan;
@@ -124,7 +124,7 @@ void neighborList::computeCPU(GPUArray<dVec> &points)
                     if (neighborIndex == pp) continue;
                     dVec disp;
                     Box->minDist(target,h_pt.data[neighborIndex],disp);
-                    scalar dist = norm(disp);
+                    double dist = norm(disp);
                     if(dist>=maxRange) continue;
                     int offset = h_npp.data[pp];
                     if(offset < Nmax && !recompute)
@@ -170,7 +170,7 @@ void neighborList::computeGPU(GPUArray<dVec> &points)
         {
         resetNeighborsGPU(Np,nmax);
         {//scope
-        ArrayHandle<unsigned int> d_npp(neighborsPerParticle,access_location::device,access_mode::readwrite);
+        ArrayHandle<int> d_npp(neighborsPerParticle,access_location::device,access_mode::readwrite);
         ArrayHandle<int> d_idx(particleIndices,access_location::device,access_mode::readwrite);
         ArrayHandle<dVec> d_vec(neighborVectors,access_location::device,access_mode::overwrite);
         ArrayHandle<int> d_assist(assist,access_location::device,access_mode::readwrite);
