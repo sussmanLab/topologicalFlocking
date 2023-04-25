@@ -21,6 +21,7 @@ add_library(model
     Simple2DActiveCell.cpp
     Simple2DCell.cpp
     voronoiModelBase.cpp
+    metricModelBase.cpp
     )
 
 cuda_add_library(modelGPU

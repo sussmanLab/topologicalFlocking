@@ -16,7 +16,6 @@ set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr
                                         ")
                                         #")#-gencode arch=compute_30,code=sm_30 -Wno-deprecated-gpu-targets ")#-Xptxas -O3 -Xcompiler -O3")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
     add_definitions(-DDEBUGFLAGUP)
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -g -lineinfo -Xptxas --generate-line-info")
@@ -28,6 +27,7 @@ find_package(Eigen3 REQUIRED)
 find_package(CUDA REQUIRED)
 
 include_directories(
+            $ENV{PATH}
             ${EIGEN3_INCLUDE_DIR}
             ${CUDA_INCLUDE_DIRS}
             ${CMAKE_SOURCE_DIR}/inc 
@@ -38,8 +38,6 @@ include_directories(
             ${CMAKE_SOURCE_DIR}/src/models
             ${CMAKE_SOURCE_DIR}/src/analysis
             ${CMAKE_SOURCE_DIR}/src/databases
-            $ENV{PATH}$
-
    )
 
 add_subdirectory(src)
