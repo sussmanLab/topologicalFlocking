@@ -20,9 +20,13 @@ add_library(utility
     eigenMatrixInterface.cpp
     hilbert_curve.cpp
     noiseSource.cpp
+    hyperrectangularCellList.cpp
+#    neighborList.cpp
     )
 cuda_add_library(utilityGPU
     cellListGPU.cu
     noiseSource.cu
     utilities.cu
+    hyperrectangularCellList.cu
+#    neighborList.cu
     )

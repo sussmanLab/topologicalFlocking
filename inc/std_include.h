@@ -39,6 +39,7 @@ using namespace std;
 
 #include "vector_types.h"
 #include "vector_functions.h"
+#include "dDimensionalVectorTypes.h"
 
 #define PI 3.14159265358979323846
 

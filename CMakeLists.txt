@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(cellGPU)
 
+add_definitions(-DDIMENSION=2)
 add_definitions(-DENABLE_CUDA)
 
 #find_package(OPENMP REQUIRED)

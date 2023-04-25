@@ -1,5 +1,10 @@
 #ifndef vectorTypeOps_H
 #define vectorTypeOps_H
+#ifdef NVCC
+#define HOSTDEVICE __host__ __device__ inline
+#else
+#define HOSTDEVICE inline __attribute__((always_inline))
+#endif
 //!component-wise addition of two scalar2s
 HOSTDEVICE double2 operator+(const double2 &a, const double2 &b)
     {
