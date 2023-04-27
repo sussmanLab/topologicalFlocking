@@ -35,6 +35,7 @@ Simple2DCell::Simple2DCell(bool _gpu, bool _neverGPU) :
         voroCur.noGPU=true;
         voroLastNext.noGPU=true;
         displacements.noGPU=true;
+        Reproducible=false;
         }
     };
 

@@ -65,13 +65,13 @@ class neighborList
         //!Initialization and helper
         void resetNeighborsGPU(int size,int _nmax);
 
-    protected:
-        //!first index is Nmax, second is whether to recompute
-        GPUArray<int> assist;
         //! compute via GPU
         void computeGPU(GPUArray<dVec> &points);
         //! compute via CPU
         void computeCPU(GPUArray<dVec> &points);
+    protected:
+        //!first index is Nmax, second is whether to recompute
+        GPUArray<int> assist;
     };
 
 #endif

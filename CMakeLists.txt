@@ -4,6 +4,7 @@ project(cellGPU)
 
 add_definitions(-DDIMENSION=2)
 add_definitions(-DENABLE_CUDA)
+add_definitions(-DCGAL_DISABLE_ROUNDING_MATH_CHECK)
 
 #find_package(OPENMP REQUIRED)
 set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS}")

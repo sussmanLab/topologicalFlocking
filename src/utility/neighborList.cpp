@@ -1,4 +1,5 @@
 #include "neighborList.h"
+#include "cuda_runtime.h"
 #include "utilities.cuh"
 #include "neighborList.cuh"
 /*! \file neighborList.cpp */
@@ -28,12 +29,16 @@ void neighborList::resetNeighborsGPU(int size,int _nmax)
     if(particleIndices.getNumElements() != neighborIndexer.getNumElements())
         {
         particleIndices.resize(neighborIndexer.getNumElements());
-        if(saveDistanceData)
-            {
+        //by default, GPU routines will precompute vector displacements to neighbors
+//        if(saveDistanceData)
+//            {
             neighborVectors.resize(neighborIndexer.getNumElements());
             neighborDistances.resize(neighborIndexer.getNumElements());
-            };
+//            };
         };
+
+    ArrayHandle<int> d_nidx(particleIndices,access_location::device,access_mode::overwrite);
+    gpu_zero_array(d_nidx.data,neighborIndexer.getNumElements());
 
     if(assist.getNumElements()!= 2)
         assist.resize(2);
@@ -64,7 +69,7 @@ void neighborList::resetNeighborsCPU(int size, int _nmax)
 
     ArrayHandle<int> h_idx(particleIndices,access_location::host,access_mode::overwrite);
     ArrayHandle<dVec> h_vec(neighborVectors,access_location::host,access_mode::overwrite);
-        ArrayHandle<double> h_dist(neighborDistances,access_location::host,access_mode::overwrite);
+    ArrayHandle<double> h_dist(neighborDistances,access_location::host,access_mode::overwrite);
     for (int i = 0; i < neighborIndexer.getNumElements(); ++i)
         {
         h_idx.data[i]=0;

@@ -25,7 +25,6 @@ void metricModelBase::initializeMetricModelBase(int n)
     //set particle number and call initializers
     Ncells = n;
     initializeSimple2DActiveCell(Ncells);
-DEBUGCODEHELPER;
     displacements.resize(Ncells);
 
     dVecPos.resize(Ncells);
@@ -33,6 +32,11 @@ DEBUGCODEHELPER;
 
     //initialize spatial sorting, but do not sort by default
     initializeCellSorting();
+    neighborNum.resize(Ncells);
+    int maxNeighGuess = 2; // just a number
+    neighbors.resize(Ncells*maxNeighGuess);
+    cellForces.resize(Ncells);
+    n_idx = Index2D(maxNeighGuess,Ncells);
 
 
     //set neighbor lists
@@ -43,10 +47,6 @@ DEBUGCODEHELPER;
     neighStructure->setGPU(GPUcompute);
     neighStructure->saveDistanceData = false;
     updateNeighborList();
-
-    //make a full triangulation
-    //neighborNum.resize(Ncells);
-    //neighbors.resize(Ncells*maxNeighGuess);
     };
 
 /*!
@@ -121,14 +121,16 @@ void metricModelBase::moveDegreesOfFreedom(GPUArray<double2> &displacements,doub
 void metricModelBase::updateNeighborList()
     {
     filldVecFromDouble2(dVecPos,cellPositions,Ncells,GPUcompute);
+
     neighStructure->computeNeighborLists(dVecPos);
+
     n_idx  =neighStructure->neighborIndexer;
+    if(neighbors.getNumElements() != neighStructure->particleIndices.getNumElements())
+        neighbors.resize(neighStructure->particleIndices.getNumElements());
+    if(neighborNum.getNumElements() != neighStructure->neighborsPerParticle.getNumElements())
+        neighborNum.resize(neighStructure->neighborsPerParticle.getNumElements());
     neighbors.swap(neighStructure->particleIndices);
     neighborNum.swap(neighStructure->neighborsPerParticle);
-    if(GPUcompute)
-        neighStructure->resetNeighborsGPU(Ncells,neighStructure->Nmax);
-    else
-        neighStructure->resetNeighborsCPU(Ncells,neighStructure->Nmax);
     };
 
 /*!
