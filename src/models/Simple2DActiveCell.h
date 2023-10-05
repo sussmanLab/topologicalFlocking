@@ -81,7 +81,13 @@ class Simple2DActiveCell : public Simple2DCell
 
             globalV.x /= getNumberOfDegreesOfFreedom();
             globalV.y /= getNumberOfDegreesOfFreedom();
-            thetaAve /= getNumberOfDegreesOfFreedom();
+
+            double2 tempVec; tempVec.x =globalV.x; tempVec.y=globalV.y;
+            double nrm = sqrt(globalV.x*globalV.x + globalV.y*globalV.y);
+            tempVec.x /=nrm;
+            tempVec.y /=nrm;
+
+            thetaAve = atan2(tempVec.y,tempVec.x);
 
             vParallel.x= cos(thetaAve);
             vParallel.y= sin(thetaAve);
@@ -89,7 +95,7 @@ class Simple2DActiveCell : public Simple2DCell
             vPerpendicular.x= -vParallel.y;
             vPerpendicular.y=  vParallel.x;
 
-            return sqrt(globalV.x*globalV.x + globalV.y*globalV.y);
+            return nrm;
             };
 
 

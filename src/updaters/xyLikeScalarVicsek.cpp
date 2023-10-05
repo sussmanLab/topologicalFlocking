@@ -12,10 +12,6 @@ xyLikeScalarVicsekModel::xyLikeScalarVicsekModel(int _N,double _eta, double _mu,
     eta = _eta;
     GPUcompute = true;
     Ndof = _N;
-    if(neverGPU)
-        {
-        newVelocityDirector.noGPU=true;
-        };
     noise.initialize(Ndof);
     if(!neverGPU)
         noise.initializeGPURNGs();

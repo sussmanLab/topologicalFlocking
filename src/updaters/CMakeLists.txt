@@ -26,6 +26,7 @@ add_library(updaters
     scalarVicsekModel.cpp
     vectorVicsekModel.cpp
     xyLikeScalarVicsek.cpp
+    xyOrderedScalarVicsek.cpp
     )
 cuda_add_library(updatersGPU
     EnergyMinimizerFIRE2D.cu

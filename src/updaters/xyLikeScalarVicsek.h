@@ -1,5 +1,5 @@
 #ifndef xyLikeScalarVicsekModel_H
-#define sxylikeSalarVicsekModel_H
+#define xylikeScalarVicsekModel_H
 
 #include "simpleEquationOfMotion.h"
 #include "Simple2DActiveCell.h"

@@ -27,6 +27,9 @@ find_package(CGAL REQUIRED)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmakeHelp)
 find_package(Eigen3 REQUIRED)
 find_package(CUDA REQUIRED)
+#find_package(SFML 
+#  COMPONENTS 
+#    system window graphics network audio REQUIRED)
 
 include_directories(
             $ENV{PATH}
@@ -75,5 +78,21 @@ target_link_libraries("${ARG}.out"
     CGAL::CGAL
     netcdf
     netcdf_c++
+    )
+endforeach()
+# list the names of cpp files corresponding to linked executables you'd like...
+foreach(ARG 
+        visualizeFlocking
+        )
+add_executable("${ARG}.out" "${ARG}.cpp" )
+target_link_libraries("${ARG}.out"
+    ${CUDA_LIBRARIES}
+    ${myLibs} 
+    CGAL::CGAL
+    sfml-graphics
+    sfml-system
+    sfml-window
+#    netcdf
+#    netcdf_c++
     )
 endforeach()
