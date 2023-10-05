@@ -9,6 +9,8 @@
 #include "vectorVicsekModel.h"
 #include "xyLikeScalarVicsek.h"
 #include "vicsekDatabase.h"
+#include <iostream>
+#include <fstream>
 /*!
  * This file is a simple implementation of either the scalar or vectorial vicsek model,
  * where neighbors are chosen according to an instantaneous Voronoi tessellation of the point set.

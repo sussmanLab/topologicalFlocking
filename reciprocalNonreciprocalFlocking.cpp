@@ -22,11 +22,11 @@ int main(int argc, char*argv[])
     int numpts = 200; //number of cells
     int USE_GPU = 0; //0 or greater uses a gpu, any negative number runs on the cpu
     int tSteps = 500; //number of time steps to run after initialization
-    int initSteps = 100; //number of initialization steps
+    int initSteps = 1000; //number of initialization steps
     int oneRingSize = 64;//estimate of max number of voro neighbors...for now, best to set this deliberately high
 
     double dt = 1.0; //the time step size
-    double v0 = 0.1;  // the self-propulsion
+    double v0 = 0.5;  // the self-propulsion
     double eta = 0.2; //the scalar- or vector- vicsek noise
     double mu = 1.0; //the friction...not relevant at the moment
 
@@ -60,7 +60,7 @@ int main(int argc, char*argv[])
 
     char dataname[256];
     sprintf(dataname,"../data/test.nc");
-    SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace);
+//    SPVDatabaseNetCDF ncdat(numpts,dataname,NcFile::Replace);
 
     profiler prof("voroVicsek initial ");
     profiler prof2("voroVicsek late stage");
@@ -73,7 +73,6 @@ int main(int argc, char*argv[])
     if (!gpu)
         initializeGPU = false;
 
-    //just switch which line is commented out to use scalar or vector viscek model...
     //for both the updaters and the model below the "initializeGPU,!initializeGPU" business is a kludge to declare "I'm not using the GPU and I never will" if gpu < 0.It's ugly, but it will stop memory from being allocated on devices that aren't being used for computation.
     shared_ptr<xyLikeScalarVicsekModel> vicsek = make_shared<xyLikeScalarVicsekModel>(numpts,eta,mu,dt,reciprocalNormalization,initializeGPU,!initializeGPU);
     //
@@ -110,12 +109,20 @@ int main(int argc, char*argv[])
     printf("Finished with initialization\n");
 
     printf("beginning primary loop\n");
+    vector<double3> orderParameters; 
+    double2 vp, vt;
     for(int ii = 0; ii < tSteps; ++ii)
         {
 
         if(ii%10 ==0)
             {
             prof2.start();
+            double vicsekPolarOrder = model->vicsekOrderParameter(vp,vt);
+            double3 ans;
+            ans.x = vicsekPolarOrder;
+            ans.y=vicsekPolarOrder*vicsekPolarOrder;
+            ans.z=vicsekPolarOrder*vicsekPolarOrder*vicsekPolarOrder*vicsekPolarOrder;
+            orderParameters.push_back(ans);
 //            ncdat.WriteState(model);
             }
 
@@ -126,5 +133,27 @@ int main(int argc, char*argv[])
 
     prof.print();
     prof2.print();
+    double meanPhi = 0;
+    double meanPhi2 = 0;
+    double meanPhi4 = 0;
+    for (int ii = 0; ii < orderParameters.size(); ++ii)
+        {
+        meanPhi += orderParameters[ii].x;
+        meanPhi2 += orderParameters[ii].y;
+        meanPhi4 += orderParameters[ii].z;
+        }
+    meanPhi = meanPhi / orderParameters.size();
+    meanPhi2 = meanPhi2 / orderParameters.size();
+    meanPhi4 = meanPhi4 / orderParameters.size();
+    cout << " noise, mean order parameter, binder G" << endl;
+    cout << "{"<< v0 <<", " << eta << ", " << meanPhi <<", " << 1-meanPhi4/(3.*meanPhi2*meanPhi2) <<"}" << endl;
+
+    ofstream myfile ("data2.txt", ios::app);
+  if (myfile.is_open())
+  {
+    myfile<< "{" << numpts<< ", " <<  eta << ", " << meanPhi <<", " << 1-meanPhi4/(3.*meanPhi2*meanPhi2) <<"}, ";
+    myfile.close();
+  }
+
     return 0;
 };
