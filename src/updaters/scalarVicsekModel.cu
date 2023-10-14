@@ -41,7 +41,7 @@ __global__ void scalar_vicsek_directors_kernel(double2 *velocities,
 __global__ void scalar_vicsek_update_kernel(double2 *forces,
                                             double2 *velocities,
                                             double2 *displacements,
-                                            double2 *motility,
+                                            double v0,
                                             int N,
                                             double deltaT,
                                             double mu)
@@ -50,7 +50,6 @@ __global__ void scalar_vicsek_update_kernel(double2 *forces,
     if (idx >=N)
         return;
 
-    double v0 = motility[idx].x;
     displacements[idx] = deltaT* (v0*velocities[idx] + mu*forces[idx]);
     };
 
@@ -58,7 +57,7 @@ bool gpu_scalar_vicsek_update(
                     double2 *forces,
                     double2 *velocities,
                     double2 *displacements,
-                    double2 *motility,
+                    double v0,
                     int N,
                     double deltaT,
                     double mu)
@@ -67,7 +66,7 @@ bool gpu_scalar_vicsek_update(
     if (N < 128) block_size = 32;
     unsigned int nblocks  = N/block_size + 1;
 
-    scalar_vicsek_update_kernel<<<nblocks,block_size>>>(forces,velocities,displacements,motility,N,deltaT,mu);
+    scalar_vicsek_update_kernel<<<nblocks,block_size>>>(forces,velocities,displacements,v0,N,deltaT,mu);
     HANDLE_ERROR(cudaGetLastError());
     return cudaSuccess;
     };

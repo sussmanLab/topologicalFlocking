@@ -60,29 +60,16 @@ class Simple2DCell : public Simple2DModel
         //!Do everything necessary to update or enforce the topology in the current model
         virtual void enforceTopology(){};
 
-        //!Set uniform cell area and perimeter preferences
-        void setCellPreferencesUniform(double A0, double P0);
 
-        //!Set cell area and perimeter preferences according to input vector
-        void setCellPreferences(vector<double2> &AreaPeriPreferences);
 
         //!Set random cell positions, and set the periodic box to a square with average cell area=1
         void setCellPositionsRandomly();
 
-        //!allow for cell division, according to a vector of model-dependent parameters
-        virtual void cellDivision(const vector<int> &parameters,const vector<double> &dParams={});
-
-        //!allow for cell death, killing off the cell with the specified index
-        virtual void cellDeath(int cellIndex);
 
         //!Set cell positions according to a user-specified vector
         void setCellPositions(vector<double2> newCellPositions);
-        //!Set vertex positions according to a user-specified vector
-        void setVertexPositions(vector<double2> newVertexPositions);
         //!Set velocities via a temperature. The return value is the total kinetic energy
         double setCellVelocitiesMaxwellBoltzmann(double T);
-        //!Set velocities via a temperature for the vertex degrees of freedom
-        double setVertexVelocitiesMaxwellBoltzmann(double T);
 
         //! set uniform moduli for all cells
         void setModuliUniform(double newKA, double newKP);
@@ -92,8 +79,6 @@ class Simple2DCell : public Simple2DModel
         //!Set cells to different "type"
         void setCellType(vector<int> &types);
 
-        //!An uncomfortable function to allow the user to set vertex topology "by hand"
-        void setVertexTopologyFromCells(vector< vector<int> > cellVertexIndices);
 
         //!return the periodicBoundaries
         virtual periodicBoundaries & returnBox(){return *(Box);};
@@ -105,23 +90,17 @@ class Simple2DCell : public Simple2DModel
         virtual vector<int> & returnItt(){return itt;};
 
         //GPUArray returners...
-        //!Return a reference to moduli
-        virtual GPUArray<double2> & returnModuli(){return Moduli;};
-        //!Return a reference to AreaPeri array
-        virtual GPUArray<double2> & returnAreaPeri(){return AreaPeri;};
-        //!Return a reference to AreaPeriPreferences
-        virtual GPUArray<double2> & returnAreaPeriPreferences(){return AreaPeriPreferences;};
         //!Return a reference to velocities on cells. VertexModelBase will instead return vertexVelocities
         virtual GPUArray<double2> & returnVelocities(){return cellVelocities;};
         //!Return a reference to Positions on cells
         virtual GPUArray<double2> & returnPositions(){return cellPositions;};
         //!Return a reference to forces on cells
         virtual GPUArray<double2> & returnForces(){return cellForces;};
-        //!Return a reference to Masses on cells
         virtual GPUArray<double> & returnMasses(){return cellMasses;};
 
         //!Return other data just returns the masses; in this class it's not needed
-        virtual GPUArray<double> & returnOtherData(){return cellMasses;};
+        virtual GPUArray<double> & returnOtherData(){
+                return fakeData;};
         //!Set the simulation time stepsize
         void setDeltaT(double dt){deltaT = dt;};
 
@@ -158,24 +137,13 @@ class Simple2DCell : public Simple2DModel
 
         //! Cell positions... not used for computation, but can track, e.g., MSD of cell centers
         GPUArray<double2> cellPositions;
-        //! Position of the vertices
-        GPUArray<double2> vertexPositions;
         //!The velocity vector of cells (only relevant if the equations of motion use it)
         GPUArray<double2> cellVelocities;
-        //!The masses of the cells
-        GPUArray<double> cellMasses;
-        //!The velocity vector of vertices (only relevant if the equations of motion use it)
-        GPUArray<double2> vertexVelocities;
-        //!The masses of the vertices
-        GPUArray<double> vertexMasses;
 
-        //! VERTEX neighbors of every vertex
-        /*!
-        in general, we have:
-        vertexNeighbors[3*i], vertexNeighbors[3*i+1], and vertexNeighbors[3*i+2] contain the indices
-        of the three vertices that are connected to vertex i
-        */
-        GPUArray<int> vertexNeighbors;
+        GPUArray<double> cellMasses;
+        GPUArray<double2> AreaPeri;
+        GPUArray<double> fakeData;
+
 
         void getCellNeighs(int idx, int &nNeighs, vector<int> &neighs)
             {
@@ -187,13 +155,6 @@ class Simple2DCell : public Simple2DModel
                 neighs[nn] = h_n.data[n_idx(nn,idx)];
             }
 
-        //! Cell neighbors of every vertex
-        /*!
-        in general, we have:
-        vertexCellNeighbors[3*i], vertexCellNeighbors[3*i+1], and vertexCellNeighbors[3*i+2] contain
-        the indices of the three cells are neighbors of vertex i
-        */
-        GPUArray<int> vertexCellNeighbors;
         //!A 2dIndexer for computing where in the GPUArray to look for a given cell's vertices
         Index2D n_idx;
         //!The number of CELL neighbors of each cell. For simple models this is the same as cellVertexNum, but does not have to be
@@ -206,8 +167,6 @@ class Simple2DCell : public Simple2DModel
         */
         GPUArray<int> cellVertexNum;
 
-        //!an array containing net force on each vertex
-        GPUArray<double2> vertexForces;
         //!an array containing net force on each cell
         GPUArray<double2> cellForces;
         //!An array of integers labeling cell type...an easy way of determining if cells are different.
@@ -265,17 +224,7 @@ class Simple2DCell : public Simple2DModel
         bool Reproducible;
         //! A source of noise for random cell initialization
         noiseSource noise;
-        //!the area modulus
-        double KA;
-        //!The perimeter modulus
-        double KP;
-        //!The area and perimeter moduli of each cell. CURRENTLY NOT SUPPORTED, BUT EASY TO IMPLEMENT
-        GPUArray<double2> Moduli;//(KA,KP)
 
-        //!The current area and perimeter of each cell
-        GPUArray<double2> AreaPeri;//(current A,P) for each cell
-        //!The area and perimeter preferences of each cell
-        GPUArray<double2> AreaPeriPreferences;//(A0,P0) for each cell
         //!A structure that indexes the vertices defining each cell
         /*!
         cellVertices is a large, 1D array containing the vertices associated with each cell.
@@ -336,45 +285,6 @@ class Simple2DCell : public Simple2DModel
             };
         //!Report the current average force on each cell
         void reportMeanCellForce(bool verbose);
-        //!Report the current average force per vertex...should be close to zero
-        void reportMeanVertexForce(bool verbose = false)
-                {
-                ArrayHandle<double2> f(vertexForces,access_location::host,access_mode::read);
-                double fx= 0.0;
-                double fy = 0.0;
-                for (int i = 0; i < Nvertices; ++i)
-                    {
-                    fx += f.data[i].x;
-                    fy += f.data[i].y;
-                    if (verbose)
-                        printf("vertex %i force = (%g,%g)\n",i,f.data[i].x,f.data[i].y);
-                    };
-                printf("mean force = (%g,%g)\n",fx/Nvertices, fy/Nvertices);
-                };
-
-        //!report the current total area, and optionally the area and perimeter for each cell
-        void reportAP(bool verbose = false)
-                {
-                ArrayHandle<double2> ap(AreaPeri,access_location::host,access_mode::read);
-                double vtot= 0.0;
-                for (int i = 0; i < Ncells; ++i)
-                    {
-                    if(verbose)
-                        printf("%i: (%f,%f)\n",i,ap.data[i].x,ap.data[i].y);
-                    vtot+=ap.data[i].x;
-                    };
-                printf("total area = %f\n",vtot);
-                };
-        //! Report the average value of p/sqrt(A) for the cells in the system
-        double reportq();
-
-        //! Report the variance of p/sqrt(A) for the cells in the system
-        double reportVarq();
-        //! Report the variance of A and P for the cells in the system
-        double2 reportVarAP();
-
-        //! Report the mean value of the perimeter
-        double reportMeanP();
 
         // virtual functions for interfacing with a Simulation
         virtual void setCPU(bool a) = 0;

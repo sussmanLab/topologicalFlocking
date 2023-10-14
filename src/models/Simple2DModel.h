@@ -57,8 +57,6 @@ class Simple2DModel
         //!move the degrees of freedom
         virtual void moveDegreesOfFreedom(GPUArray<double2> &displacements,double scale = 1.) = 0;
         //!reporting function (remove later...)
-        virtual double reportq() = 0;
-        //!reporting function (remove later...)
         virtual void reportMeanCellForce(bool a) = 0;
         //!a time variable for keeping track of the simulation variable (for databases)
         double currentTime;

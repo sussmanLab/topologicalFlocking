@@ -94,7 +94,7 @@ void SPVDatabaseNetCDF::WriteState(STATE s, double time, int rec)
         idx +=1;
         };
 //    means0 = means0/Nv;
-    means0 = s->reportq();
+    means0 = 0.0;
 
     //Write all the data
     means0Var      ->put_rec(&means0,      rec);

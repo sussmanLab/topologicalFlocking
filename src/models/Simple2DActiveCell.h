@@ -26,9 +26,6 @@ class Simple2DActiveCell : public Simple2DCell
         //!Set uniform motility
         void setv0Dr(double v0new,double drnew);
 
-        //!Set non-uniform cell motilites
-        void setCellMotility(vector<double> &v0s,vector<double> &drs);
-
         //!Set random cell directors (for active cell models)
         void setCellDirectorsRandomly();
 
@@ -36,10 +33,6 @@ class Simple2DActiveCell : public Simple2DCell
         virtual int getNumberOfDegreesOfFreedom(){return Ncells;};
 
         //!Divide cell...vector should be cell index i, vertex 1 and vertex 2
-        virtual void cellDivision(const vector<int> &parameters, const vector<double> &dParams = {});
-
-        //!Kill the indexed cell
-        virtual void cellDeath(int cellIndex);
 
         //!measure the viscek order parameter N^-1 \sum \frac{v_i}{|v_i}
         double vicsekOrderParameter(double2 &vParallel, double2 &vPerpendicular)
@@ -118,7 +111,5 @@ class Simple2DActiveCell : public Simple2DCell
         double v0;
         //!rotational diffusion of cell directors in mono-motile systems
         double Dr;
-        //!The motility parameters (v0 and Dr) for each cell
-        GPUArray<double2> Motility;
     };
 #endif
