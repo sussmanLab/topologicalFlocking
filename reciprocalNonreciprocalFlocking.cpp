@@ -10,6 +10,18 @@
 #include "xyLikeScalarVicsek.h"
 #include "DatabaseNetCDFSPV.h"
 
+
+int getMax(GPUArray<int> &a)
+    {
+    ArrayHandle<int> ns(a);
+    int maxN = 0;
+    for (int ii = 0; ii < a.getNumElements(); ++ii)
+        {
+        if(ns.data[ii] > maxN) maxN = ns.data[ii];
+        }
+    return maxN;
+    }
+
 /*!
  * This file is a simple implementation of either the scalar or vectorial vicsek model,
  * where neighbors are chosen according to an instantaneous Voronoi tessellation of the point set.
@@ -96,6 +108,7 @@ int main(int argc, char*argv[])
     sim->setCPUOperation(!initializeGPU);
     sim->setReproducible(reproducible);
 
+    cout << "max number of neighbors = " << getMax(model->neighborNum) << endl;
     //run for a few initialization timesteps
     printf("starting initialization\n");
     for(int ii = 0; ii < initSteps; ++ii)
@@ -107,6 +120,7 @@ int main(int argc, char*argv[])
             prof.end();
         };
     printf("Finished with initialization\n");
+    cout << "max number of neighbors = " << getMax(model->neighborNum) << endl;
 
     printf("beginning primary loop\n");
     vector<double3> orderParameters; 
@@ -147,6 +161,9 @@ int main(int argc, char*argv[])
     meanPhi4 = meanPhi4 / orderParameters.size();
     cout << " noise, mean order parameter, binder G" << endl;
     cout << "{"<< v0 <<", " << eta << ", " << meanPhi <<", " << 1-meanPhi4/(3.*meanPhi2*meanPhi2) <<"}" << endl;
+
+    cout << "max number of neighbors = " << getMax(model->neighborNum) << endl;
+
 
     ofstream myfile ("data2.txt", ios::app);
   if (myfile.is_open())
