@@ -92,7 +92,7 @@ target_link_libraries("${ARG}.out"
     sfml-graphics
     sfml-system
     sfml-window
-#    netcdf
-#    netcdf_c++
+    netcdf
+    netcdf_c++
     )
 endforeach()
