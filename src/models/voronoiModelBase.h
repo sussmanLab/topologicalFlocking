@@ -45,7 +45,8 @@ class voronoiModelBase : public Simple2DActiveCell
 
         //!update/enforce the topology
         virtual void enforceTopology();
-
+        //!set a new simulation box, update the positions of cells based on virtual positions, and then recompute the geometry
+        void alterBox(PeriodicBoxPtr _box);
         //virtual functions that need to be implemented
         //!In voronoi models the number of degrees of freedom is the number of cells
         virtual int getNumberOfDegreesOfFreedom(){return Ncells;};
