@@ -1,21 +1,19 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-project(cellGPU)
+project(flocking LANGUAGES CUDA CXX)
 
 add_definitions(-DDIMENSION=2)
 add_definitions(-DENABLE_CUDA)
 add_definitions(-DCGAL_DISABLE_ROUNDING_MATH_CHECK)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CUDA_ARCH "30;35;50")
+
 #find_package(OPENMP REQUIRED)
 set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++14 -DBOOST_MATH_DISABLE_FLOAT128 -fopenmp")
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr
-                                        -arch=sm_35
-                                        -gencode=arch=compute_35,code=sm_35
-                                        -gencode=arch=compute_50,code=sm_50
-                                        -gencode=arch=compute_52,code=sm_52
-                                        -Wno-deprecated-gpu-targets
-                                        ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DBOOST_MATH_DISABLE_FLOAT128 -fopenmp")
+set(CMAKE_CUDA_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr -arch=sm_${CUDA_ARCH} -gencode=arch=compute_${CUDA_ARCH},code=sm_${CUDA_ARCH}")
+set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH})
                                         #")#-gencode arch=compute_30,code=sm_30 -Wno-deprecated-gpu-targets ")#-Xptxas -O3 -Xcompiler -O3")
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")

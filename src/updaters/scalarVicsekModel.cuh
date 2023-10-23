@@ -32,7 +32,7 @@ bool gpu_scalar_vicsek_update(
                     double2 *forces,
                     double2 *velocities,
                     double2 *displacements,
-                    double2 *motility,
+                    double v0,
                     int N,
                     double deltaT,
                     double mu);

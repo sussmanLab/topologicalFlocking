@@ -18,10 +18,7 @@ include_directories(
 add_library(updaters
     brownianParticleDynamics.cpp
     EnergyMinimizerFIRE2D.cpp
-    MullerPlatheShear.cpp
     NoseHooverChainNVT.cpp
-    selfPropelledCellVertexDynamics.cpp
-    selfPropelledParticleDynamics.cpp
     setTotalLinearMomentum.cpp
     scalarVicsekModel.cpp
     vectorVicsekModel.cpp
@@ -32,8 +29,6 @@ cuda_add_library(updatersGPU
     EnergyMinimizerFIRE2D.cu
     NoseHooverChainNVT.cu
     brownianParticleDynamics.cu
-    selfPropelledCellVertexDynamics.cu
-    selfPropelledParticleDynamics.cu
     setTotalLinearMomentum.cu
     simpleEquationOfMotion.cu
     scalarVicsekModel.cu

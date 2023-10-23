@@ -83,11 +83,10 @@ void xyLikeScalarVicsekModel::integrateEquationsOfMotionCPU()
     ArrayHandle<double2> h_f(activeModel->returnForces(),access_location::host,access_mode::read);
     ArrayHandle<double2> h_v(activeModel->cellVelocities);
     ArrayHandle<double2> h_disp(displacements,access_location::host,access_mode::overwrite);
-    ArrayHandle<double2> h_motility(activeModel->Motility,access_location::host,access_mode::read);
 
+    double v0i = activeModel->v0;
     for(int ii = 0; ii<Ndof; ++ii)
         {
-        double v0i = h_motility.data[ii].x;
         h_disp.data[ii] = deltaT*(v0i*h_v.data[ii] + mu*h_f.data[ii]);
         }
     }
@@ -147,11 +146,10 @@ void xyLikeScalarVicsekModel::integrateEquationsOfMotionGPU()
     ArrayHandle<double2> d_f(activeModel->returnForces(),access_location::device,access_mode::read);
     ArrayHandle<double2> d_v(activeModel->cellVelocities,access_location::device,access_mode::read);
     ArrayHandle<double2> d_disp(displacements,access_location::device,access_mode::overwrite);
-    ArrayHandle<double2> d_motility(activeModel->Motility,access_location::device,access_mode::read);
     gpu_scalar_vicsek_update(d_f.data,
                              d_v.data,
                              d_disp.data,
-                             d_motility.data,
+                             activeModel->v0,
                              Ndof,
                              deltaT,
                              mu);

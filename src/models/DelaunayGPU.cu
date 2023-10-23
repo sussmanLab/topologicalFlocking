@@ -21,6 +21,9 @@ __host__ __device__ inline unsigned positiveModulo(int i, unsigned n)
     int mod = i % (int) n;
     return i < 0 ? mod+n : mod;
     };
+
+//below are a bunch of geometric tests... I am re-writing them (below) as bools where positive = true
+/*
 __host__ __device__ inline double checkCCW(const double2 pa, const double2 pb, const double2 pc)
     {
     return (pa.x - pb.x) * (pa.y - pc.y) - (pa.y - pb.y) * (pa.x - pc.x);
@@ -48,6 +51,35 @@ __host__ __device__ inline int checkCW(const double2 pa, const double pbx, const
 __host__ __device__ inline int checkCW(const double pax, const double pby)
     {
     return pax*pby >0 ? 0 : 1;
+    }
+*/
+__host__ __device__ inline bool checkCCW(const double2 pa, const double2 pb, const double2 pc)
+    {
+    return signbit((pa.x - pb.x) * (pa.y - pc.y) - (pa.y - pb.y) * (pa.x - pc.x));
+    }
+__host__ __device__ inline int checkCW(const double pax, const double pay, const double pbx, const double pby, const double pcx, const double pcy)
+    {
+    return (pax - pbx) * (pay - pcy) > (pay - pby) * (pax - pcx) ? 0 : 1;
+    }
+__host__ __device__ inline int checkCW(const double2 pa, const double pbx, const double pby, const double2 pc)
+    {
+    return (pa.x - pbx) * (pa.y - pc.y) > (pa.y - pby) * (pa.x - pc.x) ? 0 : 1;
+    }
+__host__ __device__ inline int checkCWhalf(const double2 pa, const double pby, const double2 pc)
+    {
+    return (pa.y-2.*pby)*pc.x > pa.x*(pc.y - pby) ? 0 : 1;
+    }
+__host__ __device__ inline int checkCWhalf(const double2 pa, const double pbx, const double pby, const double2 pc)
+    {
+    return (0.5*pa.x - pbx) * (0.5*pa.y - pc.y) > (0.5*pa.y - pby) * (0.5*pa.x - pc.x) ? 0 : 1;
+    }
+__host__ __device__ inline int checkCW(const double2 pa, const double pbx, const double pby)
+    {
+    return pa.x*pby > pa.y*pbx ? 0 : 1;
+    }
+__host__ __device__ inline int checkCW(const double pax, const double pby)
+    {
+    return signbit(pax*pby) ? 1 : 0;
     }
 
 template<typename T, int N = -1>
@@ -197,13 +229,13 @@ __device__ inline bool cellBucketInsideAngle(const double2 v, const int cx, cons
     double2 c4 = make_double2(cx*cellSize,(cy+1)*cellSize);
 
     box.minDist(v,c1,p1);
-    if(checkCCW(pt, v1, p1)>0 && checkCCW(pt, v2, p1)<0)return true;
+    if(!checkCCW(pt, v1, p1) && checkCCW(pt, v2, p1))return true;
     box.minDist(v,c2,p2);
-    if(checkCCW(pt, v1, p2)>0 && checkCCW(pt, v2, p2)<0)return true; 
+    if(!checkCCW(pt, v1, p2) && checkCCW(pt, v2, p2))return true; 
     box.minDist(v,c3,p3);
-    if(checkCCW(pt, v1, p3)>0 && checkCCW(pt, v2, p3)<0)return true; 
+    if(!checkCCW(pt, v1, p3) && checkCCW(pt, v2, p3))return true; 
     box.minDist(v,c4,p4);
-    if(checkCCW(pt, v1, p4)>0 && checkCCW(pt, v2, p4)<0)return true; 
+    if(!checkCCW(pt, v1, p4) && checkCCW(pt, v2, p4))return true; 
 
     return false;
     }
@@ -371,15 +403,17 @@ __host__ __device__ inline void virtual_voronoi_calc_function(        int kidx,
     P[GPU_idx(3, kidx)].y=-LL;
 
 #ifdef DEBUGFLAGUP
+unsigned int t1,t2,t3,t4,t6,t7;
 int blah = 0;
 int blah2 = 0;
 int blah3=0;
 int maxCellsChecked=0;
 int spotcheck=18;
 int counter= 0 ;
+    /*
 if(kidx==spotcheck) printf("VP initial poly_size = %i\n",poly_size);
-unsigned int t1,t2,t3,t4,t6,t7;
 t6=0;
+    */
 #endif
 
     for(m=0; m<poly_size; m++)
@@ -419,11 +453,13 @@ t1=clock();
 
         //check neighbours of Q's cell inside the circumcircle
 #ifdef DEBUGFLAGUP
+        /*
 maxCellsChecked  = max(maxCellsChecked,cell_rad*cell_rad);
 counter+=1;
 t1=0;
 t7=0;
 t2=clock();
+    */
 #endif
         for (int cellSpiral = 0; cellSpiral < cell_rad*cell_rad; ++cellSpiral)
             {
@@ -625,11 +661,13 @@ t7 += clock()-t2;
 
     d_neighnum[kidx]=poly_size;
 #ifdef DEBUGFLAGUP
+    /*
     if(kidx==spotcheck)
         {
         printf("VP points checked for kidx %i = %i, ignore self points = %i, ignore points outside circumcircles = %i, total neighs = %i \n",kidx,blah,blah2,blah3,poly_size);
         printf("time checks : poly loading: %u \t subreplacement: %u \treplacement: %u\n",t1,t7,t6);
         };
+        */
 #endif
     }
 
@@ -910,7 +948,7 @@ __host__ __device__ inline void get_oneRing_function(int kidx,
                         return;
                         }
                     int rotationSize = poly_size-2-j;
-                    
+
                     switch(rotationSize)
                         {
                         case 0:
@@ -1228,7 +1266,7 @@ bool gpu_get_neighbors_no_sort(const double2* d_pt, //the point set
                 int *maximumNeighborNum,
                 int currentMaxNeighborNum,
                 bool GPUcompute,
-		unsigned int ompThreadNum
+                unsigned int ompThreadNum
                 )
     {
     unsigned int block_size = THREADCOUNT;

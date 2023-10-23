@@ -62,12 +62,6 @@ class voronoiModelBase : public Simple2DActiveCell
         //!call gpu_compute_geometry kernel caller
         virtual void computeGeometryGPU();
 
-        //!allow for cell division, according to a vector of model-dependent parameters
-        virtual void cellDivision(const vector<int> &parameters,const vector<double> &dParams);
-
-        //!Kill the indexed cell by simply removing it from the simulation
-        virtual void cellDeath(int cellIndex);
-
         //!move particles on the GPU
         void movePoints(GPUArray<double2> &displacements,double scale);
         //!move particles on the CPU
@@ -97,20 +91,6 @@ class voronoiModelBase : public Simple2DActiveCell
         void resetLists();
         //!do resize and resetting operations common to cellDivision and cellDeath
         void resizeAndReset();
-
-        //Some functions associated with derivates of voronoi vertex positions or cell geometries
-        //!The derivative of a voronoi vertex position with respect to change in the first cells position
-        Matrix2x2 dHdri(double2 ri, double2 rj, double2 rk);
-        //!Derivative of the area of cell i with respect to the position of cell j
-        double2 dAidrj(int i, int j);
-        //!Derivative of the perimeter of cell i with respect to the position of cell j
-        double2 dPidrj(int i, int j);
-        //!Second derivative of area w/r/t voronoi and cell position
-        Matrix2x2 d2Areadvdr(Matrix2x2 &dvpdr, Matrix2x2 &dvmdr);
-        //!Second derivative of perimeter w/r/t voronoi and cell position
-        Matrix2x2 d2Peridvdr(Matrix2x2 &dvdr, Matrix2x2 &dvmdr, Matrix2x2 &dvpdr,double2 vm, double2 v, double2 vp);
-        //!second derivatives of voronoi vertex with respect to cell positions
-        vector<double> d2Hdridrj(double2 rj, double2 rk, int jj);
 
     //public member variables
     public:
