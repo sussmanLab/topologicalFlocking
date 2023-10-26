@@ -45,6 +45,7 @@ void voronoiModelBase::initializeVoronoiModelBase(int n, int maxNeighGuess)
     initializeCellSorting();
 
     //DelaunayGPU initialization
+    initialNeighborNumberGuess = maxNeighGuess;
     delGPU.initialize(Ncells,maxNeighGuess,1.0,Box,GPUcompute,neverGPU);
     delGPU.setSafetyMode(true);
     delGPU.setGPUcompute(GPUcompute);
@@ -63,7 +64,11 @@ void voronoiModelBase::initializeVoronoiModelBase(int n, int maxNeighGuess)
     h_actf.data[0]=0;
     };
 
-
+/*!
+This function allows one to set rectangular unit cells, but because of the current implementation of the cellList
+one **must** choose a rectangular domain in which the cell list's grid size perfectly divides *both* the x and y
+directions of the unit cell (i.e.: (length of box in x direction)/((cell list grid size)*(number of cells in x-direction)) = 1, and same for y-direction).
+*/
 void voronoiModelBase::alterBox(PeriodicBoxPtr _box)
     {
     //WRITE GPU ROUTINE LATER
@@ -77,7 +82,7 @@ void voronoiModelBase::alterBox(PeriodicBoxPtr _box)
         _box->Trans(newPos[ii],p.data[ii]);
     }//end array scope
     Box=_box;
-    reinitialize(12);
+    reinitialize(neighMax);
     enforceTopology();
     computeGeometry();
     };
@@ -526,5 +531,5 @@ void voronoiModelBase::resizeAndReset()
     neighborNum.resize(Ncells);
 
     resetLists();
-    reinitialize(neighMax);
+    reinitialize(initialNeighborNumberGuess);
     };

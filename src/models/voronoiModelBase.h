@@ -139,6 +139,7 @@ class voronoiModelBase : public Simple2DActiveCell
         //!Count the number of times that testAndRepair has been called, separately from the derived class' time
         int timestep;
 
+        int initialNeighborNumberGuess;
     //be friends with the associated Database class so it can access data to store or read
     friend class SPVDatabaseNetCDF;
     friend class vicsekDatabase;
