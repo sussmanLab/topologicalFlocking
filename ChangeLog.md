@@ -1,6 +1,9 @@
 # Change log {#changelog}
 
 ### Changes in progress
+## version 1.1
+
+Adapt cellGPU for topological flocking projects
 
 ## version 1.0.0
 
