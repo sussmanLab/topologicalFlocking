@@ -45,8 +45,8 @@ class Simple2DActiveCell : public Simple2DCell
                 vParallel = vParallel+vel.data[ii];
                 globalV = globalV+v;
                 };
-
-            vParallel = (1.0/norm(vParallel))*vParallel;
+            double nrm = norm(globalV);
+            vParallel = (1.0/nrm)*globalV;
             vPerpendicular.x= -vParallel.y;
             vPerpendicular.y=  vParallel.x;
             return norm(globalV)/getNumberOfDegreesOfFreedom();

@@ -12,13 +12,13 @@ set(CUDA_ARCH "30;35;50")
 #find_package(OPENMP REQUIRED)
 set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DBOOST_MATH_DISABLE_FLOAT128 -fopenmp")
-set(CMAKE_CUDA_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr -arch=sm_${CUDA_ARCH} -gencode=arch=compute_${CUDA_ARCH},code=sm_${CUDA_ARCH}")
+set(CMAKE_CUDA_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
 set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH})
                                         #")#-gencode arch=compute_30,code=sm_30 -Wno-deprecated-gpu-targets ")#-Xptxas -O3 -Xcompiler -O3")
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
     add_definitions(-DDEBUGFLAGUP)
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -g -lineinfo -Xptxas --generate-line-info")
+    set(CMAKE_CUDA_FLAGS "${CUDA_NVCC_FLAGS} -g -lineinfo -Xptxas --generate-line-info")
 endif(${CMAKE_BUILD_TYPE} MATCHES "Debug")
 
 find_package(CGAL REQUIRED)
@@ -66,6 +66,7 @@ set(HEADERS
 # list the names of cpp files corresponding to linked executables you'd like...
 foreach(ARG 
         topologicalVicsek
+        orderedFlocking
         metricReciprocalNonreciprocalFlocking
         reciprocalNonreciprocalFlocking
         )
