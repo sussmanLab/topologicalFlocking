@@ -6,34 +6,32 @@
 
 class vicsekDatabase : public BaseDatabaseNetCDF
 {
-private:
-    typedef shared_ptr<Simple2DActiveCell> STATE;
-    int Nv; //!< number of vertices in delaunay triangulation
-    NcDim *recDim, *NvDim, *dofDim, *boxDim, *unitDim; //!< NcDims we'll use
-    NcVar *positionVar, *velocityVar, *neighborVar, *typeVar, *directorVar, *BoxMatrixVar, *timeVar; //!<NcVars we'll use
-    int Current;    //!< keeps track of the current record when in write mode
-
-
 public:
-    vicsekDatabase(int np, string fn="temp.nc", NcFile::FileMode mode=NcFile::ReadOnly);
+    vicsekDatabase(int np, string fn="temp.nc", NcFile::FileMode mode=NcFile::read);
     ~vicsekDatabase(){File.close();};
 
+    typedef shared_ptr<Simple2DActiveCell> STATE;
+    //! NcDims we'll use
+    NcDim recDim, nDim,  dofDim, unitDim, boxDim, eulerDim;
+    //! NcVars
+    NcVar timeVar, positionVar, barycentricPositionVar,faceIndexVar, velocityVar, typeVar, neighborVar,neighborsVar,BoxMatrixVar;
+    //!read values in a new value and vector
+    virtual void readState(STATE s, int rec, bool geometry = true);
+    //!write a new value and vector
+    virtual void writeState(STATE s, double time = -1, int rec = -1);
+
 protected:
-    void SetDimVar();
-    void GetDimVar();
-
-public:
-    int  GetCurrentRec(); //!<Return the current record of the database
-    //!Get the total number of records in the database
-    int GetNumRecs(){
-                    NcDim *rd = File.get_dim("rec");
-                    return rd->size();
-                    };
-
-    //!Write the current state of the system to the database. If the default value of "rec=-1" is used, just append the current state to a new record at the end of the database
-    virtual void WriteState(STATE c, double time = -1.0, int rec=-1);
-    //!Read the "rec"th entry of the database into SPV2D state c. If geometry=true, after reading a CPU-based triangulation is performed, and local geometry of cells computed.
-    virtual void ReadState(STATE c, int rec,bool geometry=true);
-
+        //! Set all of the netcdf dimensions and variables in the file (for creating or writing new files)
+        void SetDimVar();
+        //! When reading (or writing to an existing files) load in the pre-existing netcdf info
+        void GetDimVar();
+        //!number of particles in the model
+        int N;
+        //!size of the vectors
+        int dof;
+        //! a variable that can be loaded when a state is read
+        double val;
+        //! a vector for reading doubles in and out
+        vector<double> vec;
 };
 #endif

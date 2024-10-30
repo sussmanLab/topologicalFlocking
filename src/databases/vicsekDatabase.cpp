@@ -1,21 +1,24 @@
 #include "vicsekDatabase.h"
 
 vicsekDatabase::vicsekDatabase(int np, string fn, NcFile::FileMode mode)
-    : BaseDatabaseNetCDF(fn,mode),
-      Nv(np),
-      Current(0)
+    : BaseDatabaseNetCDF(fn,mode)
     {
-    switch(Mode)
+    N=np;
+    dof = 2*N;
+    val=0.0;
+    vec.resize(dof);
+    switch(mode)
         {
-        case NcFile::ReadOnly:
-            break;
-        case NcFile::Write:
+        case NcFile::read:
             GetDimVar();
             break;
-        case NcFile::Replace:
+        case NcFile::write:
+            GetDimVar();
+            break;
+        case NcFile::replace:
             SetDimVar();
             break;
-        case NcFile::New:
+        case NcFile::newFile:
             SetDimVar();
             break;
         default:
@@ -26,46 +29,58 @@ vicsekDatabase::vicsekDatabase(int np, string fn, NcFile::FileMode mode)
 void vicsekDatabase::SetDimVar()
     {
     //Set the dimensions
-    recDim = File.add_dim("rec");
-    NvDim  = File.add_dim("Nv",  Nv);
-    dofDim = File.add_dim("dof", Nv*2);
-    boxDim = File.add_dim("boxdim",4);
-    unitDim = File.add_dim("unit",1);
-
+    recDim = File.addDim("record");
+    nDim = File.addDim("numberOfParticles", N);
+    eulerDim = File.addDim("totalNumberOfNeighbors", 6*N);
+    dofDim = File.addDim("spatialDegreesOfFreedom", dof);
+    unitDim = File.addDim("unit",1);
+    boxDim = File.addDim("boxdim",4);
+    
     //Set the variables
-    positionVar = File.add_var("position",       ncDouble,recDim, dofDim);
-    velocityVar = File.add_var("velocity",       ncDouble,recDim, dofDim);
-    neighborVar = File.add_var("neighborNumber", ncInt,recDim, NvDim);
-    typeVar     = File.add_var("type",           ncInt,recDim, NvDim );
-    directorVar = File.add_var("director",       ncDouble,recDim, NvDim );
-    BoxMatrixVar= File.add_var("BoxMatrix",      ncDouble,recDim, boxDim);
-    timeVar     = File.add_var("time",           ncDouble,recDim, unitDim);
+    timeVar = File.addVar("time",ncDouble,recDim);
+    positionVar = File.addVar("position",ncDouble,{recDim,dofDim});
+    velocityVar = File.addVar("velocity",ncDouble,{recDim,dofDim});
+    typeVar = File.addVar("type",ncInt,{recDim,dofDim});
+    BoxMatrixVar = File.addVar("BoxMatrix", ncDouble,{recDim,boxDim});
+    neighborVar = File.addVar("neighborNumber", ncInt,{recDim, nDim});
+    neighborsVar= File.addVar("neighbors", ncInt,{recDim, eulerDim});
     }
 
 void vicsekDatabase::GetDimVar()
     {
     //Get the dimensions
-    recDim = File.get_dim("rec");
-    boxDim = File.get_dim("boxdim");
-    NvDim  = File.get_dim("Nv");
-    dofDim = File.get_dim("dof");
-    unitDim = File.get_dim("unit");
+    recDim = File.getDim("record");
+    nDim = File.getDim("numberOfParticles");
+    dofDim = File.getDim("spatialDegreesOfFreedom");
+    unitDim = File.getDim("unit");
+    boxDim = File.getDim("boxdim");
+    eulerDim = File.getDim("totalNumberOfNeighbors");
+
     //Get the variables
-    positionVar          = File.get_var("postion");
-    velocityVar = File.get_var("velocity");
-    neighborVar = File.get_var("neighborNumber");
-    directorVar          = File.get_var("director");
-    typeVar          = File.get_var("type");
-    BoxMatrixVar    = File.get_var("BoxMatrix");
-    timeVar    = File.get_var("time");
+    positionVar          = File.getVar("postion");
+    velocityVar = File.getVar("velocity");
+    neighborVar = File.getVar("neighborNumber");
+    neighborsVar = File.getVar("neighbors");
+    typeVar          = File.getVar("type");
+    BoxMatrixVar    = File.getVar("BoxMatrix");
+    timeVar    = File.getVar("time");
     }
 
-void vicsekDatabase::WriteState(STATE s, double time, int rec)
+void vicsekDatabase::writeState(STATE s, double time, int rec)
     {
-    if(rec<0)   rec = recDim->size();
-    if (time < 0) time = s->currentTime;
+    int record = rec;
+    double timeToWrite = time;
+    if(record<0)
+        record = recDim.getSize();
+    if (time < 0) timeToWrite = s->currentTime;
 
+    std::vector<double> posdat(dof,0);
+    std::vector<double> veldat(dof,0);
     std::vector<double> boxdat(4,0.0);
+    std::vector<int> typedat(N,0);
+    std::vector<int> neighdat(N,0);//number of neighbors
+    std::vector<int> neighborsData(6*N,0);//neighbor indexes
+    
     double x11,x12,x21,x22;
     s->Box->getBoxDims(x11,x12,x21,x22);
     boxdat[0]=x11;
@@ -73,19 +88,14 @@ void vicsekDatabase::WriteState(STATE s, double time, int rec)
     boxdat[2]=x21;
     boxdat[3]=x22;
 
-    std::vector<double> posdat(2*Nv);
-    std::vector<double> veldat(2*Nv);
-    std::vector<double> directordat(Nv);
-    std::vector<int> typedat(Nv);
-    std::vector<int> neighdat(Nv);
     int idx = 0;
 
     ArrayHandle<double2> h_p(s->cellPositions,access_location::host,access_mode::read);
     ArrayHandle<double2> h_v(s->cellVelocities,access_location::host,access_mode::read);
     ArrayHandle<int> h_ct(s->cellType,access_location::host,access_mode::read);
     ArrayHandle<int> h_nn(s->neighborNum,access_location::host,access_mode::read);
-
-    for (int ii = 0; ii < Nv; ++ii)
+    int currentNeighborIndex = 0;
+    for (int ii = 0; ii < N; ++ii)
         {
         int pidx = s->tagToIdx[ii];
         double px = h_p.data[pidx].x;
@@ -96,81 +106,43 @@ void vicsekDatabase::WriteState(STATE s, double time, int rec)
         double vy = h_v.data[pidx].y;
         veldat[(2*idx)] = vx;
         veldat[(2*idx)+1] = vy;
-        directordat[ii] = atan2(h_v.data[pidx].y,h_v.data[pidx].x);
         typedat[ii] = h_ct.data[pidx];
         neighdat[ii] = h_nn.data[pidx];
+
+        vector<int> cellNeighs;
+        int cnn;
+        s->getCellNeighs(pidx,cnn,cellNeighs);
+        for (int jj = 0; jj <cnn; ++jj)
+            {
+            neighborsData[currentNeighborIndex] = cellNeighs[jj];
+            currentNeighborIndex+=1;
+            }
         idx +=1;
         };
 
     //Write all the data
-    timeVar      ->put_rec(&time,      rec);
-    positionVar      ->put_rec(&posdat[0],     rec);
-    velocityVar      ->put_rec(&veldat[0],     rec);
-    neighborVar       ->put_rec(&neighdat[0],      rec);
-    typeVar       ->put_rec(&typedat[0],      rec);
-    directorVar       ->put_rec(&directordat[0],      rec);
-    BoxMatrixVar->put_rec(&boxdat[0],     rec);
+    timeVar.putVar({record},&timeToWrite);
+    BoxMatrixVar.putVar({record,0},&boxdat[0]);
+    positionVar.putVar({record,0},{1,dofDim.getSize()}, &posdat[0]);
+    velocityVar.putVar({record,0},{1,dofDim.getSize()},&veldat[0]);
+    neighborVar.putVar({record,0},{1,nDim.getSize()},&neighdat[0]);
+    typeVar.putVar({record,0},{1,nDim.getSize()},&typedat[0]);
+    neighborsVar.putVar({record,0},{1,eulerDim.getSize()},&neighborsData[0]);
+
 
     File.sync();
     }
 
-void vicsekDatabase::ReadState(STATE t, int rec,bool geometry)
+void vicsekDatabase::readState(STATE t, int rec,bool geometry)
     {
-    //initialize the NetCDF dimensions and variables
-    int tester = File.num_vars();
-    GetDimVar();
-
-    //get the current time
-    timeVar-> set_cur(rec);
-    timeVar->get(& t->currentTime,1,1);
-
-
-    //set the box
-    BoxMatrixVar-> set_cur(rec);
-    std::vector<double> boxdata(4,0.0);
-    BoxMatrixVar->get(&boxdata[0],1, boxDim->size());
-    t->Box->setGeneral(boxdata[0],boxdata[1],boxdata[2],boxdata[3]);
-
-    //get the positions
-    positionVar-> set_cur(rec);
-    std::vector<double> posdata(2*Nv,0.0);
-    positionVar->get(&posdata[0],1, dofDim->size());
-
-    ArrayHandle<double2> h_p(t->cellPositions,access_location::host,access_mode::overwrite);
-    for (int idx = 0; idx < Nv; ++idx)
+    int totalRecords = GetNumRecs();
+    if (rec >= totalRecords)
         {
-        double px = posdata[(2*idx)];
-        double py = posdata[(2*idx)+1];
-        h_p.data[idx].x=px;
-        h_p.data[idx].y=py;
+        printf("Trying to read a database entry that does not exist\n");
+        throw std::exception();
         };
 
-    //get cell types and cell directors
-    typeVar->set_cur(rec);
-    std::vector<int> ctdata(Nv,0.0);
-    typeVar->get(&ctdata[0],1, NvDim->size());
-    ArrayHandle<int> h_ct(t->cellType,access_location::host,access_mode::overwrite);
-
-    directorVar->set_cur(rec);
-    std::vector<double> cddata(Nv,0.0);
-    directorVar->get(&cddata[0],1, NvDim->size());
-    ArrayHandle<double> h_cd(t->cellDirectors,access_location::host,access_mode::overwrite);
-    for (int idx = 0; idx < Nv; ++idx)
-        {
-        h_cd.data[idx]=cddata[idx];;
-        h_ct.data[idx]=ctdata[idx];;
-        };
-    //by default, compute the triangulation and geometrical information
-    if(geometry)
-        {
-        UNWRITTENCODE("AAAAAAAAAH");
-//        t->globalTriangulationCGAL();
-//        t->resetLists();
-//        if(t->GPUcompute)
-//            t->computeGeometryGPU();
-//        else
-//            t->computeGeometryCPU();
-        };
+    UNWRITTENCODE("AAAAAAAAAH");
     }
 
 
