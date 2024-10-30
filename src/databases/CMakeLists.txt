@@ -17,9 +17,7 @@ include_directories(
 
 add_library(database
     DatabaseNetCDF.cpp
-    DatabaseNetCDFSPV.cpp
-    DatabaseTextVoronoi.cpp
     vectorValueDatabase.cpp
-    vicsekDatabase.cpp
+    # vicsekDatabase.cpp
     )
 

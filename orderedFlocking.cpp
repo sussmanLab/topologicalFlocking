@@ -9,7 +9,6 @@
 #include "vectorVicsekModel.h"
 #include "xyLikeScalarVicsek.h"
 #include "xyOrderedScalarVicsek.h"
-#include "DatabaseNetCDFSPV.h"
 #include "vicsekDatabase.h"
 
 

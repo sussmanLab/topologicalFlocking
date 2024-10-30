@@ -6,6 +6,9 @@ add_definitions(-DDIMENSION=2)
 add_definitions(-DENABLE_CUDA)
 add_definitions(-DCGAL_DISABLE_ROUNDING_MATH_CHECK)
 
+#Release by default
+set(CMAKE_BUILD_TYPE "Release")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CUDA_ARCH "30;35;50")
 
@@ -23,8 +26,8 @@ endif(${CMAKE_BUILD_TYPE} MATCHES "Debug")
 
 find_package(CGAL REQUIRED)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmakeHelp)
-find_package(Eigen3 REQUIRED)
 find_package(CUDA REQUIRED)
+find_package(Eigen3 REQUIRED)
 #find_package(SFML 
 #  COMPONENTS 
 #    system window graphics network audio REQUIRED)
@@ -64,21 +67,21 @@ set(HEADERS
     )
 
 # list the names of cpp files corresponding to linked executables you'd like...
-foreach(ARG 
-        topologicalVicsek
-        orderedFlocking
-        metricReciprocalNonreciprocalFlocking
-        reciprocalNonreciprocalFlocking
-        )
-add_executable("${ARG}.out" "${ARG}.cpp" )
-target_link_libraries("${ARG}.out"
-    ${CUDA_LIBRARIES}
-    ${myLibs} 
-    CGAL::CGAL
-    netcdf
-    netcdf_c++
-    )
-endforeach()
+# foreach(ARG 
+#         topologicalVicsek
+#         orderedFlocking
+#         metricReciprocalNonreciprocalFlocking
+#         reciprocalNonreciprocalFlocking
+#         )
+# add_executable("${ARG}.out" "${ARG}.cpp" )
+# target_link_libraries("${ARG}.out"
+#     ${CUDA_LIBRARIES}
+#     ${myLibs} 
+#     CGAL::CGAL
+#     netcdf
+    # netcdf_c++4
+#     )
+# endforeach()
 # list the names of cpp files corresponding to linked executables you'd like...
 foreach(ARG 
         visualizeFlocking
@@ -92,6 +95,6 @@ target_link_libraries("${ARG}.out"
     sfml-system
     sfml-window
     netcdf
-    netcdf_c++
+    netcdf_c++4
     )
 endforeach()

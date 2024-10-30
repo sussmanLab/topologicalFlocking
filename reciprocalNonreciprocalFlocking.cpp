@@ -8,7 +8,6 @@
 #include "scalarVicsekModel.h"
 #include "vectorVicsekModel.h"
 #include "xyLikeScalarVicsek.h"
-#include "DatabaseNetCDFSPV.h"
 
 
 int getMax(GPUArray<int> &a)

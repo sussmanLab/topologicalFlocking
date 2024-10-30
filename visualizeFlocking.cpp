@@ -11,8 +11,7 @@
 #include "vectorVicsekModel.h"
 #include "xyLikeScalarVicsek.h"
 #include "xyOrderedScalarVicsek.h"
-#include "DatabaseNetCDFSPV.h"
-#include "vicsekDatabase.h"
+/*#include "vicsekDatabase.h"*/
 
 
 
@@ -72,7 +71,7 @@ int main(int argc, char*argv[])
 
     char dataname[256];
     sprintf(dataname,"./timeOrderedXYModelTrajectory_N%i_v%.3f_a%.2f_dt%.4f_eta_%.5f.nc",numpts,v0,dt,eta,reciprocalNormalization);
-    vicsekDatabase ncdat(numpts,dataname,NcFile::Replace);
+    /*vicsekDatabase ncdat(numpts,dataname,NcFile::Replace);*/
     //for both the updaters and the model below the "initializeGPU,!initializeGPU" business is a kludge to declare "I'm not using the GPU and I never will" if gpu < 0.It's ugly, but it will stop memory from being allocated on devices that aren't being used for computation.
 
 
@@ -177,8 +176,8 @@ int main(int argc, char*argv[])
                 if(frameIdx%(frameSkip*10) ==0)
                     {
                     cout << frameIdx*dt << "   " << op << "\n";cout.flush();
-                    if(saveFiles)
-                        ncdat.WriteState(model);
+                    /*if(saveFiles)*/
+                        /*ncdat.WriteState(model);*/
                     }
                 };
             }
