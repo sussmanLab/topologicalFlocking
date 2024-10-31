@@ -67,21 +67,21 @@ set(HEADERS
     )
 
 # list the names of cpp files corresponding to linked executables you'd like...
-# foreach(ARG 
-#         topologicalVicsek
-#         orderedFlocking
-#         metricReciprocalNonreciprocalFlocking
-#         reciprocalNonreciprocalFlocking
-#         )
-# add_executable("${ARG}.out" "${ARG}.cpp" )
-# target_link_libraries("${ARG}.out"
-#     ${CUDA_LIBRARIES}
-#     ${myLibs} 
-#     CGAL::CGAL
-#     netcdf
-    # netcdf_c++4
-#     )
-# endforeach()
+foreach(ARG 
+        # topologicalVicsek
+        orderedFlocking
+        # metricReciprocalNonreciprocalFlocking
+        # reciprocalNonreciprocalFlocking
+        )
+add_executable("${ARG}.out" "${ARG}.cpp" )
+target_link_libraries("${ARG}.out"
+    ${CUDA_LIBRARIES}
+    ${myLibs} 
+    CGAL::CGAL
+    netcdf
+    netcdf_c++4
+    )
+endforeach()
 # list the names of cpp files corresponding to linked executables you'd like...
 foreach(ARG 
         visualizeFlocking

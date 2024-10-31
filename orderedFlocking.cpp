@@ -11,6 +11,9 @@
 #include "xyOrderedScalarVicsek.h"
 #include "vicsekDatabase.h"
 
+#include<algorithm>
+#include<iterator>
+#include<random>
 
 
 int main(int argc, char*argv[])
@@ -69,7 +72,7 @@ int main(int argc, char*argv[])
 
     char dataname[256];
     sprintf(dataname,"./timeOrderedXYModelTrajectory_N%i_v%.3f_a%.2f_dt%.4f_eta_%.5f.nc",numpts,v0,reciprocalNormalization,dt,eta);
-    vicsekDatabase ncdat(numpts,dataname,NcFile::Replace);
+    vicsekDatabase ncdat(numpts,dataname,NcFile::replace);
     //for both the updaters and the model below the "initializeGPU,!initializeGPU" business is a kludge to declare "I'm not using the GPU and I never will" if gpu < 0.It's ugly, but it will stop memory from being allocated on devices that aren't being used for computation.
 
 
@@ -126,7 +129,52 @@ int main(int argc, char*argv[])
             double2 vParallel,vTransverse;
             double op = model->vicsekOrderParameter(vParallel,vTransverse);
             cout << frameIdx*dt << "   " << op << "\n";cout.flush();
-            ncdat.WriteState(model);
+            ncdat.writeState(model);
+            }
+        }
+    cout << "randomizing indices and continuing" << endl;
+
+    //switch pos and vel, perform triangulations
+    std::random_device rd;
+    std::mt19937 g(rd());
+    {
+    ArrayHandle<double2> hp(model->returnPositions());
+    ArrayHandle<double2> hv(model->returnVelocities());
+    vector<double2> tp(numpts);
+    vector<double2> tv(numpts);
+    vector<int> indices(numpts);
+    for(int jj =0; jj < numpts;++jj)
+        {
+        indices[jj]=jj;
+        tp[jj] = hp.data[jj];
+        tv[jj] = hv.data[jj];
+        }
+    std::shuffle(indices.begin(),indices.end(),g);
+    for(int jj =0; jj < numpts;++jj)
+        {
+        int idx = indices[jj];
+        hp.data[jj] = tp[idx];
+        hv.data[jj] = tv[idx];
+            if(jj ==0) 
+                cout << idx << " swapped" << endl;
+        }
+    }
+
+    model->enforceTopology();
+
+    for (int ii = 0; ii < tSteps; ++ii)
+        {
+        prof.start();
+        sim->performTimestep();
+        prof.end();
+        frameIdx+=1;
+
+        if(frameIdx%(frameSkip) ==0)
+            {
+            double2 vParallel,vTransverse;
+            double op = model->vicsekOrderParameter(vParallel,vTransverse);
+            cout << frameIdx*dt << "   " << op << "\n";cout.flush();
+            ncdat.writeState(model);
             }
         }
         
