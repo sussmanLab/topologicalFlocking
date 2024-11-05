@@ -73,6 +73,9 @@ int main(int argc, char*argv[])
     char dataname[256];
     sprintf(dataname,"./timeOrderedXYModelTrajectory_N%i_v%.3f_a%.2f_dt%.4f_eta_%.5f.nc",numpts,v0,reciprocalNormalization,dt,eta);
     vicsekDatabase ncdat(numpts,dataname,NcFile::replace);
+    char dataname2[256];
+    sprintf(dataname2,"./timeOrdered_postShuffle_%i_v%.3f_a%.2f_dt%.4f_eta_%.5f.nc",numpts,v0,reciprocalNormalization,dt,eta);
+    vicsekDatabase ncdat2(numpts,dataname2,NcFile::replace);
     //for both the updaters and the model below the "initializeGPU,!initializeGPU" business is a kludge to declare "I'm not using the GPU and I never will" if gpu < 0.It's ugly, but it will stop memory from being allocated on devices that aren't being used for computation.
 
 
@@ -162,7 +165,7 @@ int main(int argc, char*argv[])
 
     model->enforceTopology();
 
-    for (int ii = 0; ii < tSteps; ++ii)
+    for (int ii = 0; ii < tSteps*2; ++ii)
         {
         prof.start();
         sim->performTimestep();
@@ -176,6 +179,9 @@ int main(int argc, char*argv[])
             cout << frameIdx*dt << "   " << op << "\n";cout.flush();
             ncdat.writeState(model);
             }
+        if(ii<frameSkip && ii % 4==0)
+            ncdat2.writeState(model);
+                
         }
         
 
