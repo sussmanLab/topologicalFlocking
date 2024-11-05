@@ -38,5 +38,8 @@ This code needs cuda, and you should look up your own OS' installation instructi
     $ sudo dpkg -i cuda-keyring_1.1-1_all.deb
     $ sudo apt-get update
     $ sudo apt-get -y install cuda-toolkit-12-6
+    $ sudo apt-get install nvidia-cuda-toolkit
+    $ sudo apt install libeigen3-dev 
+    $ sudo apt-get install libsfml-dev
 
 and then edit your path appropriately.

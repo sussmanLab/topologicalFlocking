@@ -15,6 +15,18 @@
 #include<iterator>
 #include<random>
 
+int getMaxNumberNeighbors(shared_ptr<voronoiModelBase> voro, int Ndof)
+    {
+    int answer = 0;
+    ArrayHandle<int> nNeighs(voro->neighborNum);
+    for(int ii=0; ii < Ndof; ++ii)
+        {
+        int n = nNeighs.data[ii];
+        if(n > answer)
+            answer = n;
+        }
+    return answer;
+    };
 
 int main(int argc, char*argv[])
 {
@@ -131,7 +143,7 @@ int main(int argc, char*argv[])
             {
             double2 vParallel,vTransverse;
             double op = model->vicsekOrderParameter(vParallel,vTransverse);
-            cout << frameIdx*dt << "   " << op << "\n";cout.flush();
+            cout << "timestep: "<< frameIdx*dt << " order parameter:" << op << " vPar:" << vParallel.x<< " " <<vParallel.y <<"\t maxNeighs:" <<getMaxNumberNeighbors(model,numpts) << endl;
             ncdat.writeState(model);
             }
         }
@@ -176,7 +188,7 @@ int main(int argc, char*argv[])
             {
             double2 vParallel,vTransverse;
             double op = model->vicsekOrderParameter(vParallel,vTransverse);
-            cout << frameIdx*dt << "   " << op << "\n";cout.flush();
+            cout << "timestep: "<< frameIdx*dt << " order parameter:" << op << " vPar:" << vParallel.x<< " " <<vParallel.y <<"\t maxNeighs:" <<getMaxNumberNeighbors(model,numpts) << endl;
             ncdat.writeState(model);
             }
         if(ii<frameSkip && ii % 4==0)
