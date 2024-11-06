@@ -5,6 +5,16 @@
 #include "dynamicalFeatures.h"
 #include "structuralFeatures.h"
 
+double computeMoment(std::vector<double> &v, int m)
+    {
+    double answer = 0.0;
+    for (int ii = 0; ii < v.size(); ++ii)
+        answer += pow(v[ii],m);
+    if(v.size()!=0)
+        answer /= v.size();
+    return answer; 
+    }
+
 //!A small function of convenience to keep track of log spaced integers
 class logSpacedIntegers
     {

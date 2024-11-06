@@ -10,6 +10,7 @@
 #include "xyLikeScalarVicsek.h"
 #include "xyOrderedScalarVicsek.h"
 #include "vicsekDatabase.h"
+#include "analysisPackage.h"
 
 #include<algorithm>
 #include<iterator>
@@ -26,6 +27,18 @@ int getMaxNumberNeighbors(shared_ptr<voronoiModelBase> voro, int Ndof)
             answer = n;
         }
     return answer;
+    };
+void getTransverseVelocityDotProducts(shared_ptr<voronoiModelBase> model,std::vector<double> &dotProductVector)
+    {
+    int numpts = model->getNumberOfDegreesOfFreedom();
+    dotProductVector.resize(numpts);
+
+    double2 vParallel,vTransverse;
+    double op = model->vicsekOrderParameter(vParallel,vTransverse);
+
+    ArrayHandle<double2> hv(model->returnVelocities());
+    for(int jj =0; jj < numpts;++jj)
+        dotProductVector[jj] = hv.data[jj].x*vTransverse.x + hv.data[jj].y*vTransverse.y;
     };
 
 int main(int argc, char*argv[])
@@ -132,6 +145,7 @@ int main(int argc, char*argv[])
     cout << "finished initialization steps... continuing simulation" << endl;
     int frameSkip = saveFileFreq/dt;
     int frameIdx=0;
+    std::vector<double> vtVector;
     for (int ii = 0; ii < tSteps; ++ii)
         {
         prof.start();
@@ -144,6 +158,19 @@ int main(int argc, char*argv[])
             double2 vParallel,vTransverse;
             double op = model->vicsekOrderParameter(vParallel,vTransverse);
             cout << "timestep: "<< frameIdx*dt << " order parameter:" << op << " vPar:" << vParallel.x<< " " <<vParallel.y <<"\t maxNeighs:" <<getMaxNumberNeighbors(model,numpts) << endl;
+
+            getTransverseVelocityDotProducts(model,vtVector);
+
+            double m1 = computeMoment(vtVector,1);
+            double m2 = computeMoment(vtVector,2);
+            double m3 = computeMoment(vtVector,3);
+            double m4 = computeMoment(vtVector,4);
+            cout << "mean: " << m1 
+                 << " m2: " << m2
+                 << " m3: " << m3
+                 << " m4: " << m4
+                 << endl;
+
             ncdat.writeState(model);
             }
         }
