@@ -70,6 +70,7 @@ set(HEADERS
 foreach(ARG 
         # topologicalVicsek
         orderedFlocking
+        timeOrderedXY
         # metricReciprocalNonreciprocalFlocking
         # reciprocalNonreciprocalFlocking
         )
@@ -84,7 +85,7 @@ target_link_libraries("${ARG}.out"
 endforeach()
 # list the names of cpp files corresponding to linked executables you'd like...
 foreach(ARG 
-        visualizeFlocking
+        # visualizeFlocking
         )
 add_executable("${ARG}.out" "${ARG}.cpp" )
 target_link_libraries("${ARG}.out"
