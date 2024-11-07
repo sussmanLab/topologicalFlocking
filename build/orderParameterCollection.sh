@@ -19,8 +19,10 @@ do
             # we just grabbed the id of the job that finished; remove it from our array
             unset currentJobs[$finishedJob]
         fi
+        echo ./timeOrderedXY.out "-a" $a "-e" $noise "-n" $n "-t" $timesteps "-s" $s "-x" $idx
         nohup ./timeOrderedXY.out "-a" $a "-e" $noise "-n" $n "-t" $timesteps "-s" $s "-x" $idx &> "scriptOutput${idx}_${noise}.txt" &
        currentPID=$!
+       currentJobs[$currentPID]=1
     done
 done
 wait
