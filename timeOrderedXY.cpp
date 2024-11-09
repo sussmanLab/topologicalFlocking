@@ -58,6 +58,18 @@ int getMaxNumberNeighbors(shared_ptr<voronoiModelBase> voro, int Ndof)
         }
     return answer;
     };
+void getDotProductRelativeToFlocking(shared_ptr<voronoiModelBase> model,std::vector<double> &dotProductVector)
+    {
+    int numpts = model->getNumberOfDegreesOfFreedom();
+    dotProductVector.resize(numpts);
+
+    double2 vParallel,vTransverse;
+    double op = model->vicsekOrderParameter(vParallel,vTransverse);
+
+    ArrayHandle<double2> hv(model->returnVelocities());
+    for(int jj =0; jj < numpts;++jj)
+        dotProductVector[jj] = hv.data[jj].x*vTransverse.x + hv.data[jj].y*vTransverse.y;
+    };
 void getAnglesRelativeToFlocking(shared_ptr<voronoiModelBase> model,std::vector<double> &dotProductVector)
     {
     int numpts = model->getNumberOfDegreesOfFreedom();
@@ -187,7 +199,7 @@ int main(int argc, char*argv[])
 
     int frameSkip = saveFileFreq;
     std::vector<double> vtVector;
-    std::vector<double> orderParameterMoments(4);
+    std::vector<double> orderParameterMoments(9);
     for (int ii = 0; ii < tSteps; ++ii)
         {
         prof.start();
@@ -196,16 +208,25 @@ int main(int argc, char*argv[])
 
         double2 vParallel,vTransverse;
         double op = model->vicsekOrderParameter(vParallel,vTransverse);
-        getAnglesRelativeToFlocking(model,vtVector);
-
+        orderParameterMoments[0]=op;
+        getDotProductRelativeToFlocking(model,vtVector);
         double m1 = computeMoment(vtVector,1);
         double m2 = computeMoment(vtVector,2);
         double m3 = computeMoment(vtVector,3);
         double m4 = computeMoment(vtVector,4);
-        orderParameterMoments[0] = m1;
-        orderParameterMoments[1] = m2;
-        orderParameterMoments[2] = m3;
-        orderParameterMoments[3] = m4;
+        orderParameterMoments[1] = m1;
+        orderParameterMoments[2] = m2;
+        orderParameterMoments[3] = m3;
+        orderParameterMoments[4] = m4;
+        getAnglesRelativeToFlocking(model,vtVector);
+        m1 = computeMoment(vtVector,1);
+        m2 = computeMoment(vtVector,2);
+        m3 = computeMoment(vtVector,3);
+        m4 = computeMoment(vtVector,4);
+        orderParameterMoments[5] = m1;
+        orderParameterMoments[6] = m2;
+        orderParameterMoments[7] = m3;
+        orderParameterMoments[8] = m4;
         vvdat1.writeState(orderParameterMoments,ii*dt);
         if(ii%(frameSkip) ==0)
             {
@@ -214,6 +235,7 @@ int main(int argc, char*argv[])
             }
         }
 
+    ncdat.writeState(model);
     cout << "randomizing indices and continuing" << endl;
     randomizePositionVelocityIndices(model);
     prof.print();
@@ -226,16 +248,26 @@ int main(int argc, char*argv[])
 
         double2 vParallel,vTransverse;
         double op = model->vicsekOrderParameter(vParallel,vTransverse);
-        getAnglesRelativeToFlocking(model,vtVector);
-
+        orderParameterMoments[0]=op;
+        getDotProductRelativeToFlocking(model,vtVector);
         double m1 = computeMoment(vtVector,1);
         double m2 = computeMoment(vtVector,2);
         double m3 = computeMoment(vtVector,3);
         double m4 = computeMoment(vtVector,4);
-        orderParameterMoments[0] = m1;
-        orderParameterMoments[1] = m2;
-        orderParameterMoments[2] = m3;
-        orderParameterMoments[3] = m4;
+        orderParameterMoments[1] = m1;
+        orderParameterMoments[2] = m2;
+        orderParameterMoments[3] = m3;
+        orderParameterMoments[4] = m4;
+        getAnglesRelativeToFlocking(model,vtVector);
+        m1 = computeMoment(vtVector,1);
+        m2 = computeMoment(vtVector,2);
+        m3 = computeMoment(vtVector,3);
+        m4 = computeMoment(vtVector,4);
+        orderParameterMoments[5] = m1;
+        orderParameterMoments[6] = m2;
+        orderParameterMoments[7] = m3;
+        orderParameterMoments[8] = m4;
+
         vvdat2.writeState(orderParameterMoments,ii*dt);
         if(ii%(frameSkip) ==0)
             {
@@ -243,6 +275,7 @@ int main(int argc, char*argv[])
             cout << "mean: " << m1 << " m2: " << m2 << " m3: " << m3 << " m4: " << m4 << endl;
             }
         }
+    ncdat.writeState(model);
     prof.print();
         
     return 0;
