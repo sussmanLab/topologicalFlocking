@@ -146,11 +146,11 @@ int main(int argc, char*argv[])
 
     char dataname2[256];
     sprintf(dataname2,"./timeOrderedXYModel_orderParameterTimeseries_N%i_v%.3f_a%.2f_dt%.4f_eta%.5f_idx%i.nc",numpts,v0,reciprocalNormalization,dt,eta,index);
-    vectorValueDatabase vvdat1(4,dataname2,NcFile::replace);
+    vectorValueDatabase vvdat1(9,dataname2,NcFile::replace);
 
     char dataname3[256];
     sprintf(dataname3,"./timeOrderedXYModel_postShuffle_orderParameterTimeseries_N%i_v%.3f_a%.2f_dt%.4f_eta%.5f_idx%i.nc",numpts,v0,reciprocalNormalization,dt,eta,index);
-    vectorValueDatabase vvdat2(4,dataname3,NcFile::replace);
+    vectorValueDatabase vvdat2(9,dataname3,NcFile::replace);
 
 
     shared_ptr<xyOrderedScalarVicsekModel> vicsek = make_shared<xyOrderedScalarVicsekModel>(numpts,eta,mu,dt,reciprocalNormalization,initializeGPU,!initializeGPU);
